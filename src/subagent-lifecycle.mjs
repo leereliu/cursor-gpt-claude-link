@@ -103,7 +103,11 @@ export function patchSubagentLifecycle(source, surface, prefix, version='3.20.21
     return source.replace(registry, 'var __subscriptionSubagentPrefixes='+JSON.stringify(prefixes)+';');
   }
   const desktop = surface === 'desktop', arg = desktop ? 'e' : 't', handle = desktop ? 't' : 'e';
-  const symbols = (lifecycleSymbols[version] ?? lifecycleSymbols['3.20.21'])[surface];
+  // A build is named by its version, or, from 3.24.12 on, passed as the
+  // derived symbol table for this surface.
+  const symbols = typeof version === 'object' && version !== null
+    ? {service:version.subagentService, untrack:version.untrack}
+    : (lifecycleSymbols[version] ?? lifecycleSymbols['3.20.21'])[surface];
   const serviceId = symbols.service, untrack = symbols.untrack;
   const own = 'subscriptionComposer(this._composerDataService,'+arg+',__subscriptionSubagentPrefixes)';
   source = once(source, 'async stopSubagentTree('+arg+'){',

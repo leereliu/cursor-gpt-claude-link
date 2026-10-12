@@ -1,17 +1,26 @@
 import assert from 'node:assert/strict';
 
+// The method ends where its source parses as one method. Its neighbour in the
+// class changed between builds, so the parser decides instead of a landmark.
+function methodSource(source, start) {
+  for (let end = source.indexOf('}', start); end >= 0 && end - start < 200000; end = source.indexOf('}', end + 1)) {
+    const candidate = source.slice(start, end + 1);
+    try { new Function('return ({' + candidate + '})'); return candidate; } catch {}
+  }
+}
+
 // Exercise the actual patched workbench method with synthetic service objects.
 // This checks argument wiring without distributing the application's bundles.
 export async function verifyWorkbenchRouting(source, version, prefix='chatgpt-codex/') {
   // From 3.22.9 a remote session runs the agent on the SSH host, so a
   // subscription model must take the same route as an ordinary one.
-  const {tunnelledBuilds} = await import('../src/remote-routing.mjs');
-  const remoteRoute = tunnelledBuilds.includes(version) ? 'workspace' : 'dedicated';
+  const {isTunnelled} = await import('../src/remote-routing.mjs');
+  const remoteRoute = isTunnelled(version) ? 'workspace' : 'dedicated';
   const name=source.includes('async _subscriptionNativeLocalAgent(')?'_subscriptionNativeLocalAgent':'runLocalAgentInExtensionHost';
   const start = source.indexOf('async '+name+'(');
-  const end = source.indexOf('}runLocalAgentInDedicatedExtensionHost(', start);
-  assert.ok(start >= 0 && end > start, 'Native workbench routing method found');
-  const method = source.slice(start, end + 1).replace('async '+name+'(', 'async runLocalAgentInExtensionHost(');
+  const body = start >= 0 ? methodSource(source, start) : undefined;
+  assert.ok(body, 'Native workbench routing method found');
+  const method = body.replace('async '+name+'(', 'async runLocalAgentInExtensionHost(');
   const identity = value => value;
   const injected=name=>{const match=source.match(new RegExp('function '+name+'\\(existing,[\\s\\S]*?\\n}'));return match?new Function('return ('+match[0]+')')():identity;};
   const trim=method.match(/([\w$]+)\([\w$]+\.requestedModel\?\.modelId\)/)[1];

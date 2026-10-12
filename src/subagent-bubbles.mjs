@@ -51,7 +51,11 @@ export function patchSubagentBubbles(source, surface, version = '3.20.17') {
   const desktop = surface === 'desktop';
   if (!desktop && surface !== 'glass') throw new Error('Unknown workbench surface');
   const request = desktop ? 'e' : 't', parent = desktop ? 't' : 'e';
-  const symbols = bubbleSymbols[version]?.[surface];
+  // A build is named by its version, or, from 3.24.12 on, passed as the
+  // derived symbol table for this surface.
+  const symbols = typeof version === 'object' && version !== null
+    ? {trim:version.trim, task:version.taskV2+'.TASK_V2', params:version.taskV2Params, former:version.toolFormer+'.TOOL_FORMER'}
+    : bubbleSymbols[version]?.[surface];
   if (!symbols) throw new Error('Unsupported subagent bubble version');
   const trim = symbols.trim;
   const anchor = 'async _waitForParentTaskBubbleIfPossible('+request+'){const '+parent+'='+trim+'('+request+'.parentConversationId),n='+trim+'('+request+'.toolCallId);if(!'+parent+'||!n)return;const i=this._composerDataService.getHandleIfLoaded('+parent+');';

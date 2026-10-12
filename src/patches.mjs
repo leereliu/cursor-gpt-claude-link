@@ -12,11 +12,16 @@ import {buildPatches as build32021} from './patches-3.20.21.mjs';
 import {buildPatches as build32017} from './patches-3.20.17.mjs';
 import {buildPatches as build32011} from './patches-3.20.11.mjs';
 import {buildPatches as build3207} from './patches-3.20.7.mjs';
-import {supportedBuild} from './supported-builds.mjs';
+import {buildPatches as buildGeneric} from './patches-generic.mjs';
+import {supportedBuild, symbolsFor} from './supported-builds.mjs';
+// Hand-ported definitions for the builds up to 3.22.12; every later build is
+// its reviewed symbol table run through patches-generic.mjs.
 const builders={'3.22.12':build32212,'3.22.9':build3229,'3.22.5':build3225,'3.21.18':build32118,'3.21.16':build32116,'3.21.13':build32113,'3.21.12':build32112,'3.21.9':build3219,'3.21.1':build3211,'3.20.23':build32023,'3.20.21':build32021,'3.20.17':build32017,'3.20.11':build32011,'3.20.7':build3207};
 export function buildPatches(options){
  const build=supportedBuild(options.root);
  const builder=builders[build.version];
- if(!builder)throw new Error('No patch definitions for Cursor '+build.version);
- return builder(options);
+ if(builder)return builder(options);
+ const symbols=symbolsFor(build.version);
+ if(!symbols)throw new Error('No patch definitions for Cursor '+build.version);
+ return buildGeneric({...options,symbols});
 }

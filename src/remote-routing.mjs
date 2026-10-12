@@ -6,6 +6,10 @@
 // git common dir and the sandbox policy. From 3.22.9 the agent therefore runs
 // on the SSH host as Cursor intends, and the bridge is published on that
 // host's loopback with an ssh reverse forward (see ssh-forwarding.mjs).
+import {atLeast} from './versions.mjs';
+
+export const isTunnelled = version => atLeast(version, '3.22.9');
+// Kept for the builds that were listed by name before the rule above.
 export const tunnelledBuilds = ['3.22.9', '3.22.12'];
 
 export const remoteRoutingPrelude = `
@@ -80,9 +84,9 @@ function spelledAnchors({host,local,activation,key,model,arg}) {
 }
 
 export function patchRemoteRouting(source, surface, version='3.20.7') {
-  if(!['3.20.7','3.20.11','3.20.17','3.20.21','3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5','3.22.9','3.22.12'].includes(version))throw new Error('Unsupported routing version');
   // Remote sessions run on the host itself; nothing to reroute in the client.
-  if(tunnelledBuilds.includes(version))return source;
+  if(isTunnelled(version))return source;
+  if(!['3.20.7','3.20.11','3.20.17','3.20.21','3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5'].includes(version))throw new Error('Unsupported routing version');
   const original=remoteAnchors[surface];
   const anchors=routingSymbols[version]?.[surface]?spelledAnchors(routingSymbols[version][surface])
     :original&&Object.fromEntries(Object.entries(original).map(([key,value])=>[key,version==='3.20.23'?value.replaceAll('edp','kup').replaceAll('Qc','Zc').replaceAll('Qey','gJ_').replaceAll('mIg','SIg').replaceAll('Cl','kl').replaceAll('wIg','AIg'):version==='3.20.21'?value.replaceAll('edp','Sup').replaceAll('Qc','Zc').replaceAll('Qey','pJ_').replaceAll('mIg','_Ig').replaceAll('Cl','kl').replaceAll('wIg','xIg'):version==='3.20.17'?value.replaceAll('edp','jup').replaceAll('Qc','Zc').replaceAll('Qey','vey').replaceAll('mIg','mAg').replaceAll('Cl','wl').replaceAll('wIg','wAg').replaceAll('qp','Gp'):version==='3.20.11'?value.replaceAll('edp','ndp').replaceAll('Qey','ity').replaceAll('mIg','SIg').replaceAll('wIg','AIg'):value]));

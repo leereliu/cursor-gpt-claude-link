@@ -16,6 +16,7 @@ import {buildPatches} from '../src/patches.mjs';
 import {supportedBuild} from '../src/supported-builds.mjs';
 import {verifySubagentRegistration} from './subagent-registration-check.mjs';
 import {verifyWorkbenchRouting} from './workbench-routing-check.mjs';
+import {atLeast} from '../src/versions.mjs';
 
 const root = process.argv[2];
 if (!root) throw new Error('Usage: node scripts/verify-build.mjs PATH_TO_ORIGINAL_RESOURCES_APP');
@@ -35,21 +36,22 @@ try {
     execFileSync(process.execPath, ['--check', candidate], {stdio:'pipe', windowsHide:true});
     console.log('Syntax and unique anchors: ' + path.relative(root, file.path));
     if (file.path.includes('workbench.')) {
-      if(['3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5','3.22.9','3.22.12'].includes(build.version))verifySubscriptionUi(file.content);
-      if(['3.20.21','3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5','3.22.9','3.22.12'].includes(build.version))await verifyConversationActionsWorkbench(file.content,['chatgpt-codex/']);
-      if(['3.20.21','3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5','3.22.9','3.22.12'].includes(build.version)){verifyMaxMode(file.content);await verifySubagentLifecycle(file.content,['chatgpt-codex/']);}
+      if(atLeast(build.version,'3.20.23'))verifySubscriptionUi(file.content);
+      if(atLeast(build.version,'3.20.21'))await verifyConversationActionsWorkbench(file.content,['chatgpt-codex/']);
+      if(atLeast(build.version,'3.20.21')){verifyMaxMode(file.content);await verifySubagentLifecycle(file.content,['chatgpt-codex/']);}
       await verifyWorkbenchRouting(file.content, build.version);
-      if(['3.20.17','3.20.21','3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5','3.22.9','3.22.12'].includes(build.version))await verifySubagentRegistration(file.content);
+      if(atLeast(build.version,'3.20.17'))await verifySubagentRegistration(file.content);
       console.log('Native workbench SSH routing and workspace resources: passed');
     }
     if (!file.path.includes('cursor-agent-exec') && !file.path.includes('cursor-local-agent-runtime')) continue;
-    if(['3.20.17','3.20.21','3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5','3.22.9','3.22.12'].includes(build.version))await verifySubagentModels(file.content);
-    if(['3.20.21','3.20.23','3.21.1','3.21.9','3.21.12','3.21.13','3.21.16','3.21.18','3.22.5','3.22.9','3.22.12'].includes(build.version)){verifyConversationActionsRuntime(file.content);verifySubagentSettings(file.content);verifyContextBudget(file.content,{id:'chatgpt-codex/test',capabilities:{context_length:272000}});}
+    if(atLeast(build.version,'3.20.17'))await verifySubagentModels(file.content);
+    if(atLeast(build.version,'3.20.21')){verifyConversationActionsRuntime(file.content);verifySubagentSettings(file.content);verifyContextBudget(file.content,{id:'chatgpt-codex/test',capabilities:{context_length:272000}});}
     // 3.21.1 rotated these minified locals; their positions are what matters.
     const header = file.content.match(/function\(e,t,[\w$]+,[\w$]+,[\w$]+,[\w$]+=!1,i\)\{const a=function\(e\)\{/);
     assert.ok(header, 'Normalizer function found');
     const start = header.index;
-    const end = file.content.slice(start).search(/\}\([\w$]+,t,[\w$]+,[\w$]+,[\w$]+,null!=[\w$]+&&[\w$]+,a\)/) + start;
+    // The flag argument is null!=o&&o up to 3.22 and o??!1 from 3.24.
+    const end = file.content.slice(start).search(/\}\([\w$]+,t,[\w$]+,[\w$]+,[\w$]+,(?:null!=([\w$]+)&&\1|[\w$]+\?\?!1),a\)/) + start;
     assert.ok(end > start, 'Normalizer function end found');
     const normalize = new Function('return (' + file.content.slice(start, end + 1) + ')')();
     for (const effort of ['low', 'medium', 'high', 'xhigh', 'max', 'ultra']) {
