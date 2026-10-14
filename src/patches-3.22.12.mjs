@@ -119,6 +119,12 @@ pending.push({path:mainPath,content:fs.readFileSync(mainPath,'utf8')+buildAutost
 const productPath=path.join(root,'product.json');
 const product=JSON.parse(fs.readFileSync(productPath,'utf8'));
 product.checksums['vs/workbench/workbench.desktop.main.js']=crypto.createHash('sha256').update(wb).digest('base64').replace(/=+$/,'');
+// The local macOS installation has a user-installed background extension.
+// Preserve its HTML while keeping Cursor's integrity metadata accurate.
+if(process.platform==='darwin'){
+ const html='vs/code/electron-sandbox/workbench/workbench.html';
+ product.checksums[html]=crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'out',html))).digest('base64').replace(/=+$/,'');
+}
 pending.push({path:productPath,content:JSON.stringify(product,null,2)});
 return pending;
 }

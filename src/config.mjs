@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 export const stateDir = path.resolve(process.env.CURSOR_GPT_LINK_HOME ||
-  path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'cursor-gpt-link'));
+  path.join(process.platform === 'darwin' ? path.join(os.homedir(), 'Library', 'Application Support') : process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'cursor-gpt-link'));
 export const configPath = path.join(stateDir, 'config.json');
 export const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : {};
 export function getCodexHome() {

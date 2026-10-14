@@ -11,15 +11,16 @@ const contextStart=source.lastIndexOf('function ',source.lastIndexOf('if(t.conte
 const body=source.slice(contextStart,moduleEnd);
 const percent=body.match(/function ([\w$]+)\(t,e\)\{if\(!t\)return;const n=[\w$]+\(t,e\);return n!==void 0\?n.used\/n.limit\*100/)[1];
 const api=new Function(body+';return {limit:'+name+',percent:'+percent+'};')();
-const entry={slug:'fixture',display_name:'Fixture',description:'Synthetic model',context_window:272000,default_reasoning_level:'medium',supported_reasoning_levels:[{effort:'medium'},{effort:'xhigh'}]};
+const entry={slug:'fixture',display_name:'Fixture',description:'Synthetic model',context_window:272000,max_context_window:872000,supports_experimental_context:false,default_reasoning_level:'medium',supported_reasoning_levels:[{effort:'medium'},{effort:'xhigh'}]};
 const model=pickerModel(entry),models=[model];
-assert.equal(model.contextTokenLimitForMaxMode,272000);
+assert.equal(model.contextTokenLimit,272000);
+assert.equal(model.contextTokenLimitForMaxMode,500000);
 const chat=context=>({contextTokensUsed:162600,contextTokenLimit:272000,modelConfig:{maxMode:true,selectedModels:[{modelId:model.name,parameters:[{id:'context',value:String(context)},{id:'reasoning',value:'xhigh'}]}]}});
 const old=models.map(m=>({...m,contextTokenLimit:272000,contextTokenLimitForMaxMode:undefined}));
-assert.equal(api.limit(chat(200000),old),272000,'Reproduce stale 272K display with the old catalog');
-for(const context of [200000,272000,200000]){
+assert.equal(api.limit(chat(500000),old),272000,'Reproduce stale 272K display with the old catalog');
+for(const context of [272000,500000,272000]){
  assert.equal(api.limit(chat(context),models),context);
  assert.equal(api.percent(chat(context),models),162600/context*100);
 }
-assert.equal(providerModel(entry).capabilities.context_length,272000);
-console.log('Native Agents Window: old 272K display reproduced; 200K/272K/200K switching and percentages corrected, runtime capacity retained.');
+assert.equal(providerModel(entry).capabilities.context_length,500000);
+console.log('Native Agents Window: old 272K display reproduced; 272K/500K/272K switching and percentages corrected, runtime capacity retained.');

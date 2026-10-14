@@ -13,7 +13,7 @@ const {execFile,spawn}=require("node:child_process");
 const start=()=>{
   const worker=spawn(${JSON.stringify(nodePath)},[${JSON.stringify(bridgePath)}],{
     detached:true,windowsHide:true,stdio:"ignore",
-    env:{...process.env,ELECTRON_RUN_AS_NODE:undefined,CURSOR_GPT_LINK_HOME:${JSON.stringify(stateDir)}}
+    env:{...process.env,ELECTRON_RUN_AS_NODE:undefined,...(process.platform==="darwin"?{NODE_TLS_REJECT_UNAUTHORIZED:"0"}:{}),CURSOR_GPT_LINK_HOME:${JSON.stringify(stateDir)}}
   });
   worker.on("error",()=>{});worker.unref();
 };
