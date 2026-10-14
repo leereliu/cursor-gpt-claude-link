@@ -29,24 +29,19 @@ test('partial refresh retains known models and explicit hiding removes them', ()
   assert.deepEqual(refreshed[0].additional_speed_tiers, ['fast']);
 });
 
-test('the experimental context window is offered only when the catalog grants it', () => {
+test('context presets use the Codex default and an explicit 500K window within the override ceiling', () => {
   const {contextSizes} = contextOptions;
   const large = {...model, context_window:272000, max_context_window:872000};
-  assert.deepEqual(contextSizes(large), [200000, 272000], 'without the flag the ceiling stays out');
-  assert.deepEqual(contextSizes({...large, supports_experimental_context:false}), [200000, 272000]);
-  assert.deepEqual(contextSizes({...large, supports_experimental_context:true}), [200000, 272000, 872000]);
-  assert.deepEqual(contextSizes({...large, max_context_window:272000, supports_experimental_context:true}), [200000, 272000],
-    'a ceiling equal to the window adds nothing');
-  assert.deepEqual(contextSizes({...large, max_context_window:'872000', supports_experimental_context:true}), [200000, 272000, 872000],
-    'the catalog may spell the number as a string');
-  // The picker and the advertised capability follow the largest granted size.
-  const picker = pickerModel({...large, supports_experimental_context:true});
-  assert.equal(picker.contextTokenLimitForMaxMode, 872000);
-  assert.equal(picker.autoContextMaxTokens, 872000);
-  assert.deepEqual(picker.parameterDefinitions[0].parameterType.enumParameter.values.map(v => v.displayName),
-    ['200K', '272K', '872K']);
-  assert.equal(providerModel({...large, supports_experimental_context:true}).capabilities.context_length, 872000);
-  assert.equal(providerModel(large).capabilities.context_length, 272000);
+  for(const flag of [undefined,false,true])assert.deepEqual(contextSizes({...large,supports_experimental_context:flag}),[272000,500000]);
+  for(const limit of [272000,400000,undefined,'invalid'])assert.deepEqual(contextSizes({...large,max_context_window:limit}),[272000]);
+  assert.deepEqual(contextSizes({...large,max_context_window:'500000'}),[272000,500000]);
+  assert.deepEqual(contextSizes({...large,context_window:500000}),[500000]);
+  const picker=pickerModel(large);
+  assert.equal(picker.contextTokenLimit,272000);
+  assert.equal(picker.contextTokenLimitForMaxMode,500000);
+  assert.equal(picker.autoContextMaxTokens,500000);
+  assert.deepEqual(picker.parameterDefinitions[0].parameterType.enumParameter.values.map(v=>v.displayName),['Codex default · 272K','500K']);
+  assert.equal(providerModel(large).capabilities.context_length,500000);
 });
 
 test('a refresh carries the experimental fields through', () => {
@@ -187,18 +182,18 @@ test('each picker variant describes its selected effort and context',()=>{
  }
 });
 
-test('MAX expands to the declared subscription window and preserves effort and Fast',()=>{
+test('MAX selects 500K and preserves effort and Fast',()=>{
  const catalog={...model,context_window:272000,max_context_window:872000,supports_experimental_context:false};
  const picker=pickerModel(catalog);
  assert.equal(picker.supportsMaxMode,true);
- assert.deepEqual(picker.parameterDefinitions.find(p=>p.id==='context').parameterType.enumParameter.values.map(v=>v.value),['200000','272000']);
+ assert.deepEqual(picker.parameterDefinitions.find(p=>p.id==='context').parameterType.enumParameter.values.map(v=>v.value),['272000','500000']);
  assert.equal(picker.variants.filter(v=>v.isDefaultMaxConfig).length,1);
  for(const variant of picker.variants)for(const maxMode of [false,true]){
   const selected=maxModeVariant(picker,variant.parameterValues,maxMode);
-  assert.equal(selected.parameterValues.find(p=>p.id==='context').value,maxMode?'272000':'200000');
+  assert.equal(selected.parameterValues.find(p=>p.id==='context').value,maxMode?'500000':'272000');
   for(const p of variant.parameterValues.filter(p=>p.id!=='context'))assert.ok(selected.parameterValues.some(q=>q.id===p.id&&q.value===p.value));
  }
- assert.equal(providerModel(catalog).capabilities.context_length,272000);
+ assert.equal(providerModel(catalog).capabilities.context_length,500000);
  assert.equal(pickerModel({...model,context_window:128000}).supportsMaxMode,false);
  assert.throws(()=>pickerModel({...model,context_window:undefined}),/valid context/);
 });
@@ -244,8 +239,48 @@ test('disconnect cancels the active upstream HTTP stream without another model r
 test('context display separates standard and extended windows without shrinking provider capacity',()=>{
  for(const capacity of [128000,200000,272000,1000000]){
   const entry={...model,context_window:capacity},picker=pickerModel(entry);
-  assert.equal(picker.contextTokenLimit,Math.min(200000,capacity));
+  assert.equal(picker.contextTokenLimit,capacity);
   assert.equal(picker.contextTokenLimitForMaxMode,capacity);
   assert.equal(providerModel(entry).capabilities.context_length,capacity);
  }
+});
+
+test('Fast reaches Codex routing before large input and preserves the upstream tier', async () => {
+  fs.writeFileSync(path.join(process.env.CODEX_HOME, 'models_cache.json'), JSON.stringify({models:[model]}));
+  const server=http.createServer(handle);
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const originalFetch=globalThis.fetch;
+  let observed, effectiveTier='priority';
+  globalThis.fetch=async(url,options)=>{
+    assert.equal(url,'https://chatgpt.com/backend-api/codex/responses');
+    observed=options;
+    const hasPriority=options.headers['x-codex-routing-hint']==='model=test-model;tier=priority';
+    const tier=hasPriority?effectiveTier:'default';
+    return new Response('data: '+JSON.stringify({type:'response.completed',response:{service_tier:tier,status:'completed'}})+'\n\n',{
+      status:200,headers:{'Content-Type':'text/event-stream'}});
+  };
+  try {
+    for(const requested of ['priority',undefined]){
+      const response=await originalFetch('http://127.0.0.1:'+server.address().port+'/v1/responses',{
+        method:'POST',headers:{Authorization:'Bearer synthetic-test-key','Content-Type':'application/json'},
+        body:JSON.stringify({model:'chatgpt-codex/test-model',input:'x'.repeat(2*1024*1024),service_tier:requested})});
+      assert.equal(response.status,200);
+      const event=JSON.parse((await response.text()).trim().slice(6));
+      assert.equal(event.response.service_tier,requested||'default','the upstream receives the selected tier');
+      assert.equal(observed.headers['x-codex-routing-hint'],requested?'model=test-model;tier=priority':'model=test-model');
+      const inputOffset=observed.body.indexOf('"input":');
+      for(const field of ['model','stream',...(requested?['service_tier']:[])]){
+        assert.ok(observed.body.indexOf('"'+field+'":')<inputOffset,field+' precedes input');
+      }
+      if(!requested)assert.equal(JSON.parse(observed.body).service_tier,undefined);
+    }
+    // The bridge must report a real backend downgrade, never manufacture priority success.
+    effectiveTier='default';
+    const response=await originalFetch('http://127.0.0.1:'+server.address().port+'/v1/responses',{
+      method:'POST',headers:{Authorization:'Bearer synthetic-test-key','Content-Type':'application/json'},
+      body:JSON.stringify({model:'chatgpt-codex/test-model',input:'Hello',service_tier:'priority'})});
+    assert.match(await response.text(),/"service_tier":"default"/);
+  } finally {
+    globalThis.fetch=originalFetch;server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+  }
 });

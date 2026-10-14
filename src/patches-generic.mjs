@@ -1,3 +1,4 @@
+import {patchAgentHostRouting, patchSharedLocalProvider} from './agent-host-routing.mjs';
 // Patch definitions driven by a build's derived symbol table.
 //
 // Up to 3.22.12 every build had its own patches-<version>.mjs, the previous one
@@ -112,7 +113,7 @@ export function patchWorkbench(source, surface, s, prelude) {
   // Remote sessions run on the SSH host from 3.22.9 on, so nothing is rerouted.
   source = patchSubagentBubbles(source, surface, s);
   source = patchSubagentLifecycle(source, surface, prefix, s);
-  return patchAgentHost(patchConversationActionsWorkbench(source, surface, prefix));
+  return patchAgentHost(patchConversationActionsWorkbench(patchAgentHostRouting(source), surface, prefix));
 }
 
 export function buildPatches({root, cfg, models, nodePath, bridgePath, stateDir, symbols}) {
@@ -129,13 +130,20 @@ export function buildPatches({root, cfg, models, nodePath, bridgePath, stateDir,
   }
   for (const relative of ['extensions/cursor-agent-exec/dist/main.js', 'extensions/cursor-local-agent-runtime/dist/main.js']) {
     const file = path.join(root, relative);
-    pending.push({path:file, content:patchConversationActionsRuntime(patchSubagentSettingsRuntime(patchSubagentModel(wrapRuntime(fs.readFileSync(file, 'utf8')))), prefix)});
+    let content = patchConversationActionsRuntime(patchSubagentSettingsRuntime(patchSubagentModel(wrapRuntime(fs.readFileSync(file, 'utf8')))), prefix);
+    if (relative.includes('cursor-agent-exec/')) content = patchSharedLocalProvider(content);
+    pending.push({path:file, content});
   }
   const mainPath = path.join(root, 'out/main.js');
   pending.push({path:mainPath, content:fs.readFileSync(mainPath, 'utf8') + buildAutostart({nodePath, bridgePath, stateDir})});
   const productPath = path.join(root, 'product.json');
   const product = JSON.parse(fs.readFileSync(productPath, 'utf8'));
   product.checksums['vs/workbench/workbench.desktop.main.js'] = crypto.createHash('sha256').update(desktopContent).digest('base64').replace(/=+$/, '');
+  // Preserve any user-installed background HTML and its integrity metadata.
+  if (process.platform === 'darwin') {
+    const html = 'vs/code/electron-sandbox/workbench/workbench.html';
+    product.checksums[html] = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'out', html))).digest('base64').replace(/=+$/, '');
+  }
   pending.push({path:productPath, content:JSON.stringify(product, null, 2)});
   return pending;
 }

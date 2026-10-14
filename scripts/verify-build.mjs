@@ -1,3 +1,4 @@
+import {verifyAgentHostRouting, verifySharedLocalProvider} from './agent-host-routing-check.mjs';
 import {verifySubscriptionUi} from './subscription-ui-check.mjs';
 import {verifyConversationActionsWorkbench,verifyConversationActionsRuntime} from './conversation-actions-check.mjs';
 import {verifySubagentLifecycle} from './subagent-lifecycle-check.mjs';
@@ -37,6 +38,7 @@ try {
     execFileSync(process.execPath, ['--check', candidate], {stdio:'pipe', windowsHide:true});
     console.log('Syntax and unique anchors: ' + path.relative(root, file.path));
     if (file.path.includes('workbench.')) {
+      if(atLeast(build.version,'3.24.12'))verifyAgentHostRouting(file.content);
       if(atLeast(build.version,'3.20.23'))verifySubscriptionUi(file.content);
       if(atLeast(build.version,'3.20.21'))await verifyConversationActionsWorkbench(file.content,['chatgpt-codex/']);
       if(atLeast(build.version,'3.20.21')){verifyMaxMode(file.content);await verifySubagentLifecycle(file.content,['chatgpt-codex/']);}
@@ -46,8 +48,9 @@ try {
       console.log('Native workbench SSH routing and workspace resources: passed');
     }
     if (!file.path.includes('cursor-agent-exec') && !file.path.includes('cursor-local-agent-runtime')) continue;
+    if(atLeast(build.version,'3.24.12')&&file.path.includes('cursor-agent-exec'))verifySharedLocalProvider(file.content);
     if(atLeast(build.version,'3.20.17'))await verifySubagentModels(file.content);
-    if(atLeast(build.version,'3.20.21')){verifyConversationActionsRuntime(file.content);verifySubagentSettings(file.content);verifyContextBudget(file.content,{id:'chatgpt-codex/test',capabilities:{context_length:272000}});}
+    if(atLeast(build.version,'3.20.21')){verifyConversationActionsRuntime(file.content);verifySubagentSettings(file.content);verifyContextBudget(file.content,{id:'chatgpt-codex/test',capabilities:{context_length:500000}});}
     // 3.21.1 rotated these minified locals; their positions are what matters.
     const header = file.content.match(/function\(e,t,[\w$]+,[\w$]+,[\w$]+,[\w$]+=!1,i\)\{const a=function\(e\)\{/);
     assert.ok(header, 'Normalizer function found');

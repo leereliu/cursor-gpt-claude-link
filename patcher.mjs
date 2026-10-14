@@ -26,6 +26,7 @@ while (args.length) {
 
 function cursorRoot() {
   const candidates = options['cursor-root'] ? [options['cursor-root']] : [
+    ...(process.platform === 'darwin' ? ['/Applications/Cursor.app/Contents/Resources/app'] : []),
     path.join(process.env.LOCALAPPDATA || '', 'Programs/cursor/resources/app'),
     path.join(process.env.ProgramFiles || 'C:/Program Files', 'Cursor/resources/app')
   ];
@@ -37,7 +38,7 @@ function cursorRoot() {
 function validate(root) {
   build=supportedBuild(root);
   if (process.platform !== build.platform || process.arch !== build.arch) {
-    throw new Error('Only Windows x64 is supported by this release.');
+    throw new Error('Platform or architecture does not match the reviewed build.');
   }
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const product = JSON.parse(fs.readFileSync(path.join(root, 'product.json'), 'utf8'));
@@ -54,7 +55,8 @@ function validate(root) {
 function codexPath() {
   if (options['codex-path']) {
     const selected = path.resolve(options['codex-path']);
-    if (!fs.existsSync(selected) || !selected.endsWith('.exe')) throw new Error('--codex-path must point to codex.exe.');
+    if (!fs.existsSync(selected) || (process.platform === 'win32' && !selected.endsWith('.exe'))) throw new Error('--codex-path must point to a Codex executable.');
+    fs.accessSync(selected, fs.constants.X_OK);
     return selected;
   }
   const bundled = path.join(process.env.LOCALAPPDATA || '', 'Programs/OpenAI/Codex/bin/codex.exe');
@@ -67,6 +69,11 @@ function codexPath() {
 }
 
 function requireClosedCursor() {
+  if (process.platform === 'darwin') {
+    const list = execFileSync('/bin/ps', ['-axo', 'comm='], {encoding:'utf8'});
+    if (list.split('\n').some(line => line.trim().startsWith('/Applications/Cursor.app/Contents/MacOS/'))) throw new Error('Close Cursor before installing or restoring.');
+    return;
+  }
   const list = execFileSync('tasklist.exe', ['/FI', 'IMAGENAME eq Cursor.exe', '/FO', 'CSV', '/NH'], {encoding:'utf8', windowsHide:true});
   if (/"Cursor\.exe"/i.test(list)) throw new Error('Close all Cursor windows and background processes before installing or restoring.');
 }

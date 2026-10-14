@@ -1,19 +1,16 @@
-// Use the subscription catalog's declared window. An API model's context limit
-// does not establish subscription availability, and neither does the binary's
-// built-in default catalog: only the fetched catalog says what this account
-// gets. The catalog can also grant a larger experimental window per model, and
-// then it is offered on top, so the option appears by itself once the account
-// has it.
+// Use the catalog default for everyday work. The user-selected 500K preset
+// stays within max_context_window, the catalog ceiling for manual overrides.
+// supports_experimental_context controls Codex experimental context management;
+// it does not define the ceiling for this explicit local window selection.
 export function contextSizes(model) {
-  const full=Number(model.context_window);
-  if(!Number.isSafeInteger(full)||full<=0)throw new Error('Model catalog has no valid context window.');
-  const sizes=[Math.min(200000,full),full];
-  const experimental=Number(model.max_context_window);
-  if(model.supports_experimental_context===true&&Number.isSafeInteger(experimental)&&experimental>full)sizes.push(experimental);
-  return [...new Set(sizes)];
+  const standard=Number(model.context_window);
+  if(!Number.isSafeInteger(standard)||standard<=0)throw new Error('Model catalog has no valid context window.');
+  const advertised=Number(model.max_context_window);
+  const ceiling=Number.isSafeInteger(advertised)&&advertised>=standard?advertised:standard;
+  return standard<500000&&ceiling>=500000?[standard,500000]:[standard];
 }
 export const contextLabel=value=>value>=1000000?String(value/1000000)+'M':String(value/1000)+'K';
 export function contextDefinition(sizes) {
-  return {id:'context',name:'Context',markdownTooltip:'Choose the conversation context window. A larger window can use more of your subscription allowance and take longer. Reasoning effort and Fast are configured separately.',
-    parameterType:{enumParameter:{values:sizes.map(value=>({value:String(value),displayName:contextLabel(value),modelPickerBadges:[]}))}}};
+  return {id:'context',name:'Context',markdownTooltip:'The default uses the Codex model catalog window. A separate 500K option is offered when it extends the default. A larger window can use more of your subscription allowance and take longer. Reasoning effort and Fast are configured separately.',
+    parameterType:{enumParameter:{values:sizes.map((value,index)=>({value:String(value),displayName:index===0?'Codex default · '+contextLabel(value):contextLabel(value),modelPickerBadges:[]}))}}};
 }

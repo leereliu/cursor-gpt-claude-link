@@ -59,7 +59,7 @@ export function pickerModel(m) {
   const labels={none:'None',minimal:'Minimal',low:'Low',medium:'Medium',high:'High',xhigh:'Very high',max:'Max',ultra:'Ultra'};
   const fastAvailable=supportsFast(m);
   const contexts=contextSizes(m),standardContext=contexts[0],fullContext=contexts.at(-1);
-  const fastTooltip='Request priority processing. Fast can consume more of your ChatGPT allowance. Speed and usage depend on the model and your account. The service returned standard processing in our tests, so this switch does not guarantee faster responses. [Details](https://learn.chatgpt.com/docs/agent-configuration/speed)';
+  const fastTooltip='Enable Fast mode using the same priority routing as Codex. Fast uses more of your ChatGPT allowance. Availability and speed depend on the model and your account. [Details](https://learn.chatgpt.com/docs/agent-configuration/speed)';
   return {
     name: prefix + m.slug, serverModelName: prefix + m.slug,
     clientDisplayName: m.display_name,
@@ -167,13 +167,14 @@ export function normalizeRequest(body, models = readModels()) {
   const tier=body.service_tier;
   if(tier!==undefined&&tier!=='default'&&tier!=='priority')throw new Error('Unsupported speed mode.');
   if(tier==='priority'&&!supportsFast(model))throw new Error('Fast is unavailable for this model.');
-  return {model:model.slug, instructions:instructions.join('\n\n').trim() || 'You are a helpful assistant.',
+  // Match Codex routing: gateways can inspect these fields before a large prompt.
+  return {model:model.slug, stream:true, ...(tier==='priority'?{service_tier:'priority'}:{}),
+    instructions:instructions.join('\n\n').trim() || 'You are a helpful assistant.',
     input:filtered, tools:body.tools || [], tool_choice:body.tool_choice || 'auto',
     parallel_tool_calls:body.parallel_tool_calls ?? true,
     reasoning:{effort, ...(body.reasoning?.summary ? {summary:body.reasoning.summary} : {})},
     ...(body.text ? {text:body.text} : {}),
-    ...(tier==='priority'?{service_tier:'priority'}:{}),
-    include:['reasoning.encrypted_content'], stream:true, store:false};
+    include:['reasoning.encrypted_content'], store:false};
 }
 
 function json(res, status, data) { res.writeHead(status, {'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
@@ -243,7 +244,8 @@ export async function handle(req, res) {
         const auth = credentials();
         upstream = await fetch(endpoint,{method:'POST',redirect:'error',signal:abort.signal,
           headers:{Authorization:'Bearer '+auth.access_token,'ChatGPT-Account-Id':auth.account_id,
-            'Content-Type':'application/json',originator:'codex_cli_rs'},body:JSON.stringify(request)});
+            'Content-Type':'application/json',originator:'codex_cli_rs',
+            'x-codex-routing-hint':'model='+request.model+(request.service_tier?';tier='+request.service_tier:'')},body:JSON.stringify(request)});
         if (upstream.status !== 401 || attempt === 1) break;
         await upstream.body.cancel(); await refreshAuth();
       }

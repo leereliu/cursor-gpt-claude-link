@@ -20,7 +20,9 @@ export function symbolsFor(version) {
 export function supportedBuild(root) {
   const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
   if (!isSupportedVersion(version)) throw new Error('Unsupported Cursor version: ' + version);
-  const file = version === '3.20.7' ? 'supported-build.json' : 'supported-build-' + version + '.json';
+  const darwinFile = 'supported-build-' + version + '-darwin.json';
+  const file = process.platform === 'darwin' && fs.existsSync(new URL(darwinFile, import.meta.url))
+    ? darwinFile : version === '3.20.7' ? 'supported-build.json' : 'supported-build-' + version + '.json';
   const build = JSON.parse(fs.readFileSync(new URL(file, import.meta.url), 'utf8'));
   const product = JSON.parse(fs.readFileSync(path.join(root, 'product.json'), 'utf8'));
   if (product.commit !== build.commit) throw new Error('Unsupported Cursor commit.');
