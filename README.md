@@ -1,5 +1,7 @@
 # cursor-gpt-link
 
+This fork preserves the macOS adaptation, Fast routing, Codex-default / 500K context choices, Cursor 3.24 Agent Host send fix, and signed official-version switching. **[macOS 使用与升级说明](MACOS.md)** contains the maintained entrypoints. The original upstream documentation follows.
+
 An experimental patch that adds models from your local Codex catalog to Cursor's model picker and routes them through your existing ChatGPT sign-in. It uses Cursor's local agent runtime. It does not install an extension.
 
 This release targets the reviewed Windows builds listed below. It is not a general patch for every Cursor version, operating system, subscription, or model.
