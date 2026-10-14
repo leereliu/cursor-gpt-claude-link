@@ -10,3 +10,8 @@ test-profile/
 *.log
 *.tmp
 .env*
+__pycache__/
+*.pyc
+operation.json
+switch-state.json
+inactive/

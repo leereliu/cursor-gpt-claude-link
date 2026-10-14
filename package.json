@@ -15,6 +15,13 @@
     "uninstall": "node patcher.mjs restore",
     "restore": "node patcher.mjs restore",
     "test:attachments": "node scripts/test-attachments.mjs",
-    "install:remote": "node scripts/install-remote.mjs"
+    "install:remote": "node scripts/install-remote.mjs",
+    "test:macos": "node scripts/test-macos.mjs",
+    "macos:check": "./cursor-macos check",
+    "macos:install": "./cursor-macos install",
+    "macos:status": "./cursor-macos status",
+    "macos:official": "./cursor-macos official",
+    "macos:patched": "./cursor-macos patched",
+    "sync:upstream": "./sync-upstream"
   }
 }
