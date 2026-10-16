@@ -1,0 +1,15 @@
+// The native Max toggle changes context capacity, not reasoning or speed.
+export function maxModeVariant(model, parameters, maxMode) {
+  const candidates=model.variants.filter(v=>(v.isMaxMode===true)===maxMode);
+  if(!candidates.length)return;
+  const requested=parameters.filter(p=>p.id!=='context');
+  const score=v=>requested.filter(p=>v.parameterValues.some(q=>q.id===p.id&&q.value===p.value)).length;
+  return candidates.reduce((best,v)=>score(v)>score(best)?v:best);
+}
+export function patchMaxMode(source) {
+  const matches=[...source.matchAll(/function ([\w$]+)\(([\w$]+),([\w$]+),([\w$]+)\)\{if\(\2.variants.length===0\|\|!\4&&\2.supportsNonMaxMode===!1\)return;/g)];
+  if(matches.length!==1)throw new Error('Max-mode variant solver anchor is not unique');
+  const match=matches[0],model=match[2],params=match[3],mode=match[4];
+  const call='if('+model+'.name?.startsWith("claude-subscription/")){const v=__ClaudeMaxModeVariant('+model+','+params+','+mode+');if(v)return{model:'+model+',variant:v,parameters:v.parameterValues}}';
+  return source.replace(match[0],match[0]+call)+'\n'+maxModeVariant.toString().replace('function maxModeVariant','function __ClaudeMaxModeVariant')+'\n';
+}

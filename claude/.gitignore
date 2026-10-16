@@ -1,0 +1,14 @@
+node_modules/
+.state/
+.env*
+!.env.example
+auth.json
+.credentials.json
+config.json
+*.log
+installed.json*
+backups/
+*.original
+candidate-*.mjs
+coverage/
+*.tmp
