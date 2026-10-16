@@ -1,0 +1,13 @@
+id,requested_tier,returned_tier,input_tokens,cached_input_tokens,output_tokens,reasoning_tokens,visible_output_tokens,total_seconds,first_text_seconds,text_stream_seconds,total_output_tokens_per_second,visible_output_tokens_per_second,correct
+codex-fast-1,priority,default,22329,12288,4072,3307,765,67.626,57.011,10.283,60.213,74.395,True
+codex-fast-2,priority,default,22329,12288,3027,2291,736,77.054,59.391,16.92,39.284,43.499,True
+codex-fast-3,priority,default,22329,22144,2781,2070,711,52.173,43.579,7.943,53.304,89.513,True
+codex-standard-1,default,default,22329,12288,2709,1956,753,100.449,80.719,19.352,26.969,38.91,True
+codex-standard-2,default,default,22329,12288,3346,2588,758,125.403,104.962,19.925,26.682,38.043,True
+codex-standard-3,default,default,22329,12288,2554,1817,737,91.211,72.601,18.065,28.001,40.797,True
+cursor-fast-1,priority,default,24887,13312,3510,2781,729,64.753,56.709,7.677,54.206,94.955,True
+cursor-fast-2,priority,default,24887,0,3084,2366,718,53.079,40.776,11.362,58.103,63.195,True
+cursor-fast-3,priority,default,24887,0,2871,2129,742,49.012,38.893,9.75,58.578,76.099,True
+cursor-standard-1,default,default,24884,13312,2828,2048,780,94.486,76.236,18.095,29.931,43.107,True
+cursor-standard-2,default,default,24888,13312,3470,2729,741,125.606,106.251,19.21,27.626,38.573,True
+cursor-standard-3,default,default,24880,13312,3303,2563,740,102.943,80.946,21.621,32.086,34.226,True

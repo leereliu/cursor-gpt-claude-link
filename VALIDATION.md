@@ -22,9 +22,20 @@
 
 Claude 实际工具测试包含三轮 bridge 请求，均完成。测试文件只写入临时目录，未读取用户业务文件。
 
-## Fast 验证边界
+## Fast 验证记录
 
-两次短文本 GPT 请求均成功，普通模式约 2.074 秒，Fast 请求约 2.466 秒；两次服务端返回的 `service_tier` 都是 `default`。请求端的 priority 字段和 routing header 已保留并通过回归检查，但此次结果没有证明服务端实际采用优先处理。该短样本也不能作为 token/s 或加速倍率基准。
+2026-10-01 的完整对照测速已确认 GPT Fast 在当时环境中实际提高输出吞吐。模型固定为 GPT-6.1-Sol，推理强度为 xhigh，同一账号、相同斐波那契任务；Codex CLI 与实际 Cursor 界面各执行三次普通模式、三次 Fast，共 12 次成功测试，数列和校验值全部正确。所有完成事件的 `service_tier` 均为 `default`，这个返回字段没有区分实际观察到的速度差异，不能据此判定 Fast 未生效。
+
+下表为可见输出 token/s 的中位数。可见输出 token 数为总输出减去 reasoning token 数，计时为首个至最后一个答案文字事件的间隔。
+
+| 客户端 | 普通 token/s | Fast token/s | Fast 倍率 |
+| --- | ---: | ---: | ---: |
+| Codex CLI | 38.91 | 74.40 | 1.91× |
+| Cursor 界面 | 38.57 | 76.10 | 1.97× |
+
+整体输出吞吐含推理和等待时间，Codex CLI 提高到 1.98 倍，Cursor 提高到 1.94 倍。[逐次测速数据](./docs/fast-benchmark-2026-10-01.csv)保留输入与缓存 token 数、请求与返回 tier、计时和正确性结果。每组只有三次样本，缓存命中、推理长度和服务负载存在波动，上述倍率描述此次历史测量。Codex CLI 使用原生 WebSocket，Cursor 使用 HTTP SSE，各客户端的 Fast 效果以自身开关对照衡量。另有一次网络失败已按相同条件重试，未计入吞吐统计。
+
+2026-10-16 的组合版本验收保留了 priority 请求字段与优先路由头，并验证了 Cursor Fast 的实际发送和工具调用。当天两次 11 token 短文本请求均成功，普通模式约 2.074 秒，Fast 约 2.466 秒，返回 tier 均为 `default`。这些短请求用于连通性检查，不足以评估吞吐或推翻此前完整测速的加速结论。本次未重复执行长输出测速。
 
 Claude 请求显式设置 `fastMode: false`。未启用 usage credits，没有把 Effort 当作 Fast。
 
@@ -32,4 +43,4 @@ Claude 请求显式设置 `fastMode: false`。未启用 usage credits，没有�
 
 本机 JavaScript 测试为 217 项通过、3 项因平台或系统版本跳过；Python 应用管理和同步测试为 13 项通过。CI 矩阵覆盖 macOS 15、macOS 26、Windows，Node 22 和 24。Windows 只运行适用的 JavaScript 测试，POSIX 应用恢复场景在 macOS 执行。
 
-未执行 500K 实际填满、长输出速度基准、SSH 远端组合安装和 Remote Control 云端运行。大上下文预算及参数保持通过原始 native JavaScript 验证；Remote Control 对本地订阅模型给出明确拒绝并保留草稿。
+本次未执行 500K 实际填满、SSH 远端组合安装和 Remote Control 云端运行；GPT 长输出速度沿用上述历史测速记录。大上下文预算及参数保持通过原始 native JavaScript 验证；Remote Control 对本地订阅模型给出明确拒绝并保留草稿。

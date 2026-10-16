@@ -43,7 +43,7 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 | 使用量 | 两个订阅分别显示用量，不输出账号凭据 |
 | 恢复 | 一次切换恢复完整的官方应用和原自动更新设置 |
 
-[Claude 官方 Fast 文档](https://code.claude.com/docs/en/fast-mode)说明，Fast 使用 usage credits，独立于订阅额度。Effort 是推理强度。此项目不会启用额外计费；Claude 请求显式传入 `fastMode: false`。GPT Fast 是否得到优先处理以服务端返回为准。
+[Claude 官方 Fast 文档](https://code.claude.com/docs/en/fast-mode)说明，Fast 使用 usage credits，独立于订阅额度。Effort 是推理强度。此项目不会启用额外计费；Claude 请求显式传入 `fastMode: false`。GPT Fast 在此前 Codex CLI 与 Cursor 的对照测速中已观察到实际加速，即使服务端返回 `service_tier: default`。该字段不能单独判断 Fast 是否生效；测速数据见 [验证记录](./VALIDATION.md#fast-验证记录)。
 
 本次验证范围为本机 Cursor。Remote Control 的云端创建接口无法访问本地订阅 bridge，会保留草稿并提示使用 This Mac。SSH 与远端运行扩展保留来源代码，尚未纳入组合安装的实机验收。
 
