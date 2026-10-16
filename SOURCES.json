@@ -1,0 +1,4 @@
+{
+  "gpt": {"repository": "https://github.com/leereliu/cursor-gpt-link", "commit": "83a31284e13fc77315064fd61c78c71fe2b89c10", "directory": "."},
+  "claude": {"repository": "https://github.com/leereliu/cursor-claude-link", "commit": "807961e1ff0b5e659f7a6924ca4a057576053fc5", "directory": "claude"}
+}

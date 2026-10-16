@@ -8,10 +8,10 @@ export function verifyAgentHostRouting(source) {
   const local=class { executeTurn(turn) { return {kind:'local',turn}; } };
   const primary={executeTurn(turn) { return {kind:'host',turn}; }};
   const route=factory.call({agentClientService:{}},createChatgptExecutionStrategy,{executionStrategy:primary},local);
-  for(const modelId of ['chatgpt-codex/gpt-6.1-sol','ordinary-model']) {
+  for(const modelId of ['chatgpt-codex/gpt-6.1-sol','claude-subscription/opus','ordinary-model']) {
     const turn={modelDetails:{modelId:'default'},runOptions:{requestedModel:{modelId}},conversationState:{turns:['previous']}};
     const result=route.executeTurn(turn);
-    assert.equal(result.kind,modelId.startsWith('chatgpt-codex/')?'local':'host');assert.equal(result.turn,turn);
+    assert.equal(result.kind,modelId==='ordinary-model'?'host':'local');assert.equal(result.turn,turn);
   }
   console.log('Actual AgentCompat constructor: subscription local path and ordinary Agent Host path passed.');
 }

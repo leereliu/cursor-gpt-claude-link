@@ -1,3 +1,4 @@
+import {installRuntime} from './src/runtime-install.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -5,7 +6,7 @@ import crypto from 'node:crypto';
 import net from 'node:net';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {buildPatches} from './src/patches.mjs';
+import {buildPatches} from './src/combined-patches.mjs';
 import {supportedBuild} from './src/supported-builds.mjs';
 import {installFiles, restoreFiles, hash} from './src/installation.mjs';
 import {stateDir, configPath} from './src/config.mjs';
@@ -18,7 +19,7 @@ const command = args.shift() || 'help';
 const options = {};
 while (args.length) {
   const flag = args.shift();
-  if (!['--cursor-root', '--codex-path', '--codex-home', '--port'].includes(flag) || !args.length || args[0].startsWith('--')) {
+  if (!['--cursor-root', '--codex-path', '--codex-home', '--port', '--claude-path', '--claude-port'].includes(flag) || !args.length || args[0].startsWith('--')) {
     throw new Error('Unknown or incomplete option: ' + flag);
   }
   options[flag.slice(2)] = args.shift();
@@ -90,7 +91,11 @@ async function prepare(root, cfg) {
   const {pickerModels} = await import('./src/bridge.mjs');
   const models = pickerModels();
   if (!models.length) throw new Error('No models found. Sign in and open Codex once to refresh its model catalog.');
-  return buildPatches({root, cfg, models, nodePath:process.execPath,
+  const {requireSubscription}=await import('./claude/runner.mjs');
+  const {discoverModels}=await import('./claude/catalog.mjs');
+  await requireSubscription(cfg.claude,{cwd:sourceDir});
+  const claudeCatalog=await discoverModels(cfg.claude,{cwd:sourceDir});
+  return buildPatches({root, cfg, models, claudeCatalog, nodePath:process.execPath,
     bridgePath:path.join(stateDir, 'runtime/bridge.mjs'), stateDir});
 }
 
@@ -133,8 +138,13 @@ Close Cursor before install or restore. See README.md for requirements.`);
   if (fs.existsSync(manifestPath)) throw new Error('Installation already recorded. Use status or restore first.');
   const port = Number(options.port || 43187);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Port must be an integer between 1024 and 65535.');
-  await availablePort(port);
-  const cfg = {port, key:crypto.randomBytes(32).toString('hex'), codex:codexPath(),
+  const claudePort=Number(options['claude-port']||43188);
+  if(!Number.isInteger(claudePort)||claudePort<1024||claudePort>65535||claudePort===port)throw new Error('Claude requires a distinct valid loopback port.');
+  await availablePort(port);await availablePort(claudePort);
+  const {findClaude}=await import('./claude/cli-path.mjs');
+  const claude=options['claude-path']?path.resolve(options['claude-path']):findClaude();
+  fs.accessSync(claude,fs.constants.X_OK);
+  const cfg = {port, claudePort, claude, key:crypto.randomBytes(32).toString('hex'), codex:codexPath(),
     codexHome:path.resolve(options['codex-home'] || process.env.CODEX_HOME || path.join(os.homedir(), '.codex'))};
   fs.mkdirSync(stateDir, {recursive:true});
   fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), {mode:0o600});
@@ -154,10 +164,9 @@ Close Cursor before install or restore. See README.md for requirements.`);
     fs.unlinkSync(candidate);
   }
   const runtime = path.join(stateDir, 'runtime');
-  fs.mkdirSync(runtime, {recursive:true});
-  for (const name of ['bridge.mjs', 'config.mjs', 'openai-icon.mjs', 'model-tooltip.mjs', 'context-options.mjs']) fs.copyFileSync(path.join(sourceDir, 'src', name), path.join(runtime, name));
+  installRuntime(sourceDir,runtime);
   installFiles(pending, {backupDir, manifestPath, version:build.version, commit:build.commit});
-  console.log('Installed. Start Cursor and select a model with the OpenAI symbol.');
+  console.log('Installed GPT and Claude together. Start Cursor and select a subscription model.');
 }
 
 main().catch(error => { console.error(error.message); process.exitCode = 1; });

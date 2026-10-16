@@ -17,7 +17,8 @@ test('Agent Host rejects the private model before the repair; subscription turns
     assert.equal(calls.at(-1)[1],request,'state, tools, actions and selected parameters retain identity');
   }
   assert.ok(calls.every(([kind]) => kind === 'local'));
-  for (const id of ['ordinary-model','claude-subscription/model',undefined]) {
+  assert.equal(await routed.executeTurn({modelDetails:{modelId:'claude-subscription/opus'}}),'local-ok');
+  for (const id of ['ordinary-model',undefined]) {
     const request = {modelDetails:{modelId:id}};
     assert.equal(await routed.executeTurn(request),'host-ok');
     assert.equal(calls.at(-1)[0],'host');

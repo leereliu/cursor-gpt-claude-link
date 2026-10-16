@@ -267,8 +267,24 @@ export async function handle(req, res) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
   const server=http.createServer(handle);
   server.on('error',e=>{process.stderr.write('Local bridge failed: '+e.code+'\n');process.exit(1);});
   server.listen(config.port,'127.0.0.1',()=>process.stdout.write('ChatGPT bridge ready on loopback\n'));
+  if(config.claude){
+    const {createHandler}=await import('./claude/bridge.mjs');
+    const {createCatalog}=await import('./claude/catalog.mjs');
+    const {createUsage}=await import('./claude/usage.mjs');
+    const cwd=path.join(path.dirname(fileURLToPath(import.meta.url)),'claude');
+    const records=[];
+    const report=record=>{
+      records.push(record);if(records.length>40)records.shift();
+      // Keep only provider, timing and outcome evidence, never prompts or credentials.
+      const statusPath=path.join(dir,'claude-status.json');
+      fs.writeFileSync(statusPath,JSON.stringify(records,null,2)+'\n',{mode:0o600});
+    };
+    const claude=http.createServer(createHandler({config,cwd,getCatalog:createCatalog(config.claude,{cwd}),getUsage:createUsage(config.claude,{cwd}),report}));
+    claude.on('error',e=>{process.stderr.write('Claude bridge failed: '+e.code+'\n');process.exit(1);});
+    claude.listen(config.claudePort,'127.0.0.1',()=>process.stdout.write('Claude bridge ready on loopback\n'));
+  }
 }

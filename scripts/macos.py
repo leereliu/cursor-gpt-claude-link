@@ -337,7 +337,7 @@ def install(repo, check_only=False):
         recover()
         raise
     register()
-    print('Cursor ' + version + ' 补丁已安装，Fast、模型默认上下文与 500K 选项已保留。')
+    print('Cursor ' + version + ' GPT 与 Claude 补丁已安装；GPT Fast、默认上下文与 500K 选项已保留。')
     print('官方版入口：python3 "' + str(STATE / 'switch-version.py') + '" official')
 
 

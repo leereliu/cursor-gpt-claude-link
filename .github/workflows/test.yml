@@ -1,21 +1,21 @@
 name: Tests
-
 on:
   push:
+    branches: [main]
   pull_request:
-
+  workflow_dispatch:
 permissions:
   contents: read
-
 jobs:
-  unit:
-    runs-on: windows-latest
+  test:
     strategy:
       matrix:
-        node: [22, 24, 26]
+        os: [macos-15, macos-26, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - run: npm test
+      - run: npm run test:all

@@ -1,257 +1,59 @@
-# cursor-gpt-link
+# cursor-gpt-claude-link
 
-This fork preserves the macOS adaptation, Fast routing, Codex-default / 500K context choices, Cursor 3.24 Agent Host send fix, and signed official-version switching. **[macOS 使用与升级说明](MACOS.md)** contains the maintained entrypoints. The original upstream documentation follows.
+在 Cursor 本地 agent harness 中使用已有的 ChatGPT/Codex 与 Claude Code 订阅。工具执行、工作区与聊天仍由 Cursor 管理；本机 bridge 分别调用 Codex Responses 服务和 Claude Code CLI。
 
-An experimental patch that adds models from your local Codex catalog to Cursor's model picker and routes them through your existing ChatGPT sign-in. It uses Cursor's local agent runtime. It does not install an extension.
+本仓库基于 [leereliu/cursor-gpt-link](https://github.com/leereliu/cursor-gpt-link) 与 [leereliu/cursor-claude-link](https://github.com/leereliu/cursor-claude-link)。GPT 历史保留在根目录，Claude 通过 Git subtree 保留在 `claude/`，两个项目的 MIT 许可证均保留。来源版本见 [SOURCES.json](SOURCES.json)。
 
-This release targets the reviewed Windows builds listed below. It is not a general patch for every Cursor version, operating system, subscription, or model.
+## 本机版本
 
-## Status
+本次适配 macOS 15.7.3、Apple Silicon、Cursor 3.24.12，Cursor commit 为 `37b865941ccb31e2fc90c685157534efca87f960`。安装前校验官方应用签名、版本和六个原始文件的 SHA-256。未知版本会在修改应用前退出。
 
-| Item | Current status |
+Node.js 22+、Python 3、已经登录的 Codex CLI 与 Claude Code CLI 是安装依赖。Claude 模型目录通过本机 CLI initialize 协议获取。
+
+## 安装与恢复
+
+```sh
+./cursor-link status
+./cursor-link check
+./cursor-link install
+./cursor-link official
+./cursor-link patched
+```
+
+`check` 只读检查签名、指纹及实际 JavaScript 中的补丁逻辑。`install` 要求 Cursor 已退出，在完整应用副本中同时生成 GPT 和 Claude 补丁，完成检查后再替换应用。安装失败会按操作日志恢复应用、设置与运行文件。
+
+为沿用已有的官方签名备份和恢复入口，状态目录继续使用 `~/Library/Application Support/cursor-gpt-link`。`cursor-macos` 是兼容入口。运行文件复制到状态目录，日常使用不依赖仓库目录位置。官方版恢复入口仍为：
+
+```sh
+python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" official
+```
+
+升级流程为：退出 Cursor → `official` → 在官方版完成升级并退出 → 更新本仓库 → `check` → `install`。新 Cursor 版本需要审核对应指纹和符号表，无法直接假定兼容。
+
+## 功能
+
+| 功能 | 行为 |
 | --- | --- |
-| Cursor | 3.24.12, 3.22.12, 3.22.9, 3.22.5, 3.21.18, 3.21.16, 3.21.13, 3.21.12, 3.21.9, 3.21.1, 3.20.23, 3.20.21, 3.20.17, 3.20.11 and 3.20.7, Windows x64 |
-| Latest Cursor commit | `37b865941ccb31e2fc90c685157534efca87f960` (3.24.12) |
-| Cursor 3.22.12 commit | `3a92974361033b2051526321308c2740fe5912c0` |
-| Cursor 3.22.9 commit | `2ca0f45baa06796a86f6c6ba2b9bedacaf94c370` |
-| Cursor 3.22.5 commit | `a00aa8754ab5bae70b637d98e126f9dbd4e1e5d0` |
-| Cursor 3.21.18 commit | `c4730f7d93d787d9ab120af715999f0345ee5bc0` |
-| Cursor 3.21.16 commit | `8ae78e8eee1e63479c7e0504b664bc0a80c68000` |
-| Cursor 3.21.13 commit | `e44a49c17e334d442e58bbde931d791200f014a0` |
-| Cursor 3.21.12 commit | `05ddb9e824590e2c1db6bd2548dd71bf67ac9d20` |
-| Cursor 3.21.9 commit | `9998796a6096ce83d83a9332bfe7473b985db750` |
-| Cursor 3.21.1 commit | `74f717017ddcbf0554cd8c91ec7e2fb56983a070` |
-| Previous Cursor commit | `b23e0e2d3c0fc9bb9311f4390230a120ccc9aa50` (3.20.23) |
-| Cursor 3.20.11 commit | `69d099d6568dc97e110ba8184614faf51c4040b0` |
-| Oldest Cursor commit | `979197d5570b168c034c634b3e21f2bea3ea5be0` (3.20.7) |
-| Latest local test date | October 12, 2026 |
-| Node.js used for testing | 26.7.0 |
-| Codex CLI used for testing | 0.153.4 |
-| Text generation through the bridge | Verified with GPT-6 Astra |
-| Tool calls | Confirmed working in manual local Cursor testing; bridge round trip also verified |
-| File edits | Confirmed working in manual local Cursor testing |
-| Reasoning selection | Forwarding verified in both local runtimes |
-| IDE and Agents Window | Both bundles patched and syntax checked; manual results do not specify coverage of each window |
-| Remote SSH sessions | From 3.22.9 the agent runs on the host and reaches the bridge through an ssh reverse forward the installer writes; automated checks pass, live remote use is unconfirmed |
-| Fast mode | Selector and request forwarding verified; actual priority processing not confirmed |
+| GPT | 已有 Codex 登录、Fast priority、模型支持的推理强度 |
+| GPT Context | 模型目录中的默认窗口；目录上限允许且默认小于 500K 时增加 500K |
+| Claude | 已有 Claude Code 登录、实时模型目录、支持的 Effort 和上下文选项 |
+| Claude Fast | 当前明确关闭。保留普通订阅模式，界面不提供无法转发的开关 |
+| Agent Host | 两种订阅模型均进入本地执行路径；普通 Cursor 模型保持原路径 |
+| 工具调用 | Claude 结构化输出转换为 Cursor 工具请求；执行结果进入后续请求 |
+| 使用量 | 两个订阅分别显示用量，不输出账号凭据 |
+| 恢复 | 一次切换恢复完整的官方应用和原自动更新设置 |
 
-Remote SSH sessions changed with 3.22.9. Until then a remote session kept the agent in Cursor's dedicated UI runtime so that the bridge, which listens on the client's loopback, stayed reachable. That runtime resolves paths with the client's own path module: on a Windows client against a Linux host, the workspace path `/srv/app` became `C:\\srv\\app`, and the runtime then looked there for `.cursor/rules`, ran `git rev-parse` in it, walked its ignore files up to the drive root and built the sandbox policy from it. From 3.22.9 the agent runs on the SSH host, where the workspace actually is, and the bridge is published on that host's loopback with an ssh reverse forward that `cursor-gpt-link` writes into `~/.ssh/config`. See [Remote sessions](#remote-sessions).
+[Claude 官方 Fast 文档](https://code.claude.com/docs/en/fast-mode)说明，Fast 使用 usage credits，独立于订阅额度。Effort 是推理强度。此项目不会启用额外计费；Claude 请求显式传入 `fastMode: false`。GPT Fast 是否得到优先处理以服务端返回为准。
 
-Cursor 3.24.12 (3.23 was skipped) is the first build supported through its symbol table alone. A build is now its reviewed `src/symbols-<version>.json` and `src/supported-build-<version>.json`; `src/patches-generic.mjs` holds the patch logic once and reproduced the reviewed 3.22.12 output byte for byte before it was used here. The builds up to 3.22.12 keep the patches they were reviewed with. The release changed more than names: the model picker went through the React compiler, so the subscription sections now go into a memoized fragment that is rebuilt while they exist; the run gate no longer passes `localMode` in its options; both runtime bundles ship native `??`, `?.`, async functions and object spreads; the two protobuf messages the action manager uses were renamed (`QF` to `QFf`, `RG` to `RGk`) and are now found by their role; and the engine's run parameters rotated. All automated checks pass and the three patches were checked together. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
+本次验证范围为本机 Cursor。Remote Control 的云端创建接口无法访问本地订阅 bridge，会保留草稿并提示使用 This Mac。SSH 与远端运行扩展保留来源代码，尚未纳入组合安装的实机验收。
 
-Cursor 3.22.12 renamed 30 of the 50 derived symbols on each surface and changed nothing the patches anchor to. The extractor now lives in the repository as `scripts/derive-symbols.mjs`, which is how this port started: it reproduced every reviewed 3.22.9 value before it was used here. Both runtime bundles needed no change. All automated checks pass and the three patches were installed together on a local 3.22.12. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
+## 验证
 
-Cursor 3.22.9 renamed symbols again and changed nothing else: 16 of 50 in the editor, 31 of 50 in the Agents Window. The anchors the minor release had moved a build earlier, the model map and `subscribeHeaders`, stayed as 3.22.5 left them, and both runtime bundles are unchanged. The extractor reproduced every reviewed 3.22.5 value before it was used here. All automated checks pass and the three patches were installed together on a local 3.22.9. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.22.5 is the first minor release these patches have been carried across, and it renamed more than four fifths of the derived symbols: 42 of 50 in the editor and 41 of 50 in the Agents Window. Two things changed beyond the names. The default model map renamed both its prefix binding and its mapper, which every build since 3.20 had left alone. And `subscribeHeaders` was rewritten: the disposed-store check is now an early return instead of a ternary, and the reactive read the old anchor matched on is gone. The shared subagent lifecycle module now recognises both shapes and hydrates the transcript after the new guard, so the older supported builds keep their original treatment. Everything else, including both runtime bundles, needed no change. All automated checks pass and the three patches were installed together on a local 3.22.5. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.21.18 renamed the obfuscated workbench symbols again, this time 11 of 50 in the editor and 13 of 50 in the Agents Window; the anchored code and both runtime bundles are unchanged. The extractor reproduced every reviewed 3.21.16 value unchanged before it was used on this build. The recycled name this time sits in the Plan & Usage card itself: the Agents Window identifier that rendered the card in 3.21.16 is the card's useEffect alias in 3.21.18, so a symbol-by-symbol substitution would have swapped the two. All automated checks pass and the three patches were installed together on a local 3.21.18. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.21.16 renamed the obfuscated workbench symbols again, and again left the anchored code and both runtime bundles untouched. Half the workbench symbols changed on each surface. The extractor was rebuilt for this port and first had to reproduce every reviewed 3.21.13 value before it was used here. Recycled names showed up once more: the editor identifier that pointed at the Google dashboard link in 3.21.13 is the settings card's useEffect alias in 3.21.16, so replacements are made on whole anchors rather than symbol by symbol. All automated checks pass and the three patches were installed together on a local 3.21.16. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.21.13 renamed the obfuscated workbench symbols again; the anchored code is unchanged and the runtime bundles needed no change. The extractor was validated against the reviewed 3.21.12 values before this build was derived. Recycled names caught the eye again: the editor identifier that meant the tool-former capability here was the untracked reader in the Agents Window a build earlier, which is why whole anchors are replaced rather than single symbols. All automated checks pass and the three patches were installed together on a local 3.21.13. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.21.12 renamed the obfuscated workbench symbols again; the code the patches anchor to is unchanged. The symbols were re-derived by role and the extractor was validated against the reviewed 3.21.9 values before it was trusted with this build. Names are recycled between builds, so replacements are made on whole anchors rather than symbol by symbol: in the editor bundle the identifier that meant useState in 3.21.9 means useEffect in 3.21.12. The runtime bundle anchors needed no change. All automated checks pass, and the three patches were installed together on a local 3.21.12. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.21.9 renamed the obfuscated workbench symbols again but left the code structure unchanged. Every workbench symbol was re-derived and checked against the known 3.21.1 values first; the runtime anchors that now read their symbols out of the match needed no change. The automated checks pass on 3.21.9 for both workbench bundles and both runtime bundles, and both patches were installed together on a local 3.21.9. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.21.1 renamed the obfuscated workbench symbols and rotated the minified locals in both extension runtime bundles, so the anchors were re-derived for this build and the version-independent ones were widened to read their symbols out of the match. The automated checks pass on 3.21.1 for both workbench bundles and both runtime bundles, including the native model resolver, Explore settings, context budget, reasoning and Fast forwarding, subagent lifecycle, subagent registration, action manager and subscription settings checks. Both patches were installed together on a local 3.21.1, Cursor started with no workbench errors and both bridges served their model catalogs. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
-
-Cursor 3.20.23 has its own reviewed patch definitions; support for 3.20.21, 3.20.17, 3.20.11 and 3.20.7 is retained. The installer checks the version, commit and original file hashes before applying a version-specific patch. Automated checks passed on 3.20.23, including standalone and combined installations. After installing both patches and starting Cursor 3.20.23, short live requests completed in the Agents Window with Claude Opus 5 High and GPT-6 Astra Medium (272K). Switching from Claude to ChatGPT in the same test conversation also worked. These prompts deliberately requested no tools or file changes. Fresh IDE, remote SSH, attachment and full subagent workflow checks remain pending for this build. See [testing notes](docs/testing.md) for the scope of verification.
-
-On Cursor 3.20.17, 3.20.21 and 3.20.23, local subscription subagents also receive a missing parent Task entry before Cursor waits for its registration. The repair passed automated checks in both workbenches; a completed SSH subagent task still needs manual confirmation. See the testing notes for details.
-
-On Cursor 3.20.21 and 3.20.23, **Explore Subagent Model** selections are forwarded to the local runtime with their model parameters. **Default**, **Inherit** and **Disabled** retain Cursor's native behavior. Model tooltips show the context window and selected effort in the same layout as Cursor's built-in models. Context selection and the legacy MAX switch now control the actual runtime window while preserving effort. See [Context and MAX mode](docs/model-modes.md). See the [testing notes](docs/testing.md) for coverage.
-
-On Cursor 3.20.21 and 3.20.23, stopping a subscription chat also cancels its active subagents. Local subagent stops do not wait for the agent-host service, and a cancelled parent cannot start a late child request. Reopening a subagent refreshes its transcript cache and loads the most recent missing messages. These changes passed automated checks; manual chat-switch and stop verification is still pending.
-
-On Cursor 3.20.21 and 3.20.23, queued follow-ups are forwarded to the local runtime. Starting Build also preserves human messages that have not reached the conversation checkpoint yet. Delivery is confirmed by native message events, and stopping the chat prevents queued work from starting another run. Automated queue and build checks passed; manual Plan-to-Build validation is pending.
-
-
-## Remote sessions
-
-In a Remote-SSH window the agent runs on the host, so the host has to reach the bridge. The installer adds a reverse forward to `~/.ssh/config`, inside a marked block it owns:
-
-```
-# >>> cursor subscription links: bridge forwarding >>>
-Host your-server
-    RemoteForward 127.0.0.1:43187 127.0.0.1:43187
-# <<< cursor subscription links: bridge forwarding <<<
+```sh
+npm run test:all
+node scripts/verify-build.mjs /path/to/official/Cursor.app/Contents/Resources/app
 ```
 
-The hosts are the ones you have opened in Cursor that are also declared in your `~/.ssh/config`; nothing else is touched, so ssh to anything outside that list, `git push` included, is unaffected. All three links share the block, each owning the line for its own port, and `npm run restore` removes only its own. A copy of the file as it was before the first change is kept as `config.before-cursor-links`.
+覆盖源项目单元测试、组合运行、应用替换和中断恢复、实际 native JS 锚点、两类模型路由、Fast/Effort/Context 参数，以及完整官方签名恢复。实机结果见 [VALIDATION.md](VALIDATION.md)。
 
-### The host's own runtime
-
-The workbench patch is on the client, but four repairs live in the two extension runtimes, and those run wherever the agent runs: reasoning effort and Fast forwarding, the subagent model repair that lets an omitted Task model inherit the parent, the Explore subagent settings, and the receiver for queued follow-ups. In a remote session the host uses its own copy of Cursor under `~/.cursor-server`, so without this step a Task call that omits the optional `model` is rejected there with *Invalid model selection ""*, and the effort you picked is dropped before the request leaves the host.
-
-```powershell
-npm run install:remote -- your-server
-```
-
-It reads the two bundles over ssh, patches and syntax-checks them on the client, writes them back with a rename and keeps the untouched copy beside each file. `--check` reports what would change without writing, and `--restore` puts the originals back. The three links share one manifest on the host, each adding its own provider, so install them in the same order as locally.
-
-**After the first time this is automatic.** A local install walks the hosts in the ssh block, and every host that already carries the manifest is brought to the new build. A host that was never patched is passed over: installing on a machine is a decision of its own, not a side effect of patching this client. `--no-remote` skips the step.
-
-A Windows host is handled too: its default shell is cmd, so every command travels as an encoded PowerShell script and file contents move as base64 in both directions. `--all` walks the hosts in the ssh block and takes every one that already runs a server for this build; a host you have not opened since the Cursor update has nothing to patch yet, so connect once and run it again.
-
-| Flag | Effect |
-| --- | --- |
-| `--ssh-hosts=a,b` | Configure exactly these hosts instead of the detected ones |
-| `--no-ssh` | Change nothing in `~/.ssh/config` |
-| `--no-remote` | Do not carry the runtime patch to known hosts |
-
-Two things to know. A second ssh session to the same host cannot bind the port again and ssh prints `remote port forwarding failed`; the session still works, and the first one keeps serving the bridge. And the bridge becomes reachable on that host's loopback, so only forward to hosts you trust with it. The bridge still requires its per-installation key.
-
-The agent on the host uses the server's own copy of Cursor's runtime under `~/.cursor-server`, which this patch does not touch. Model selection, tool calls and file edits work from there, but the runtime-side extras this patch adds locally, reasoning effort forwarding and the subagent model repairs, are not present on the host yet.
-
-## What it adds
-
-OAuth models appear with a small OpenAI symbol before their names in the model picker, in their own **ChatGPT Subscription** section. Native Cursor models stay under **Cursor Models**. If cursor-claude-link is also installed, Claude models appear under **Claude Subscription**. Install ChatGPT first and Claude second. Remove them in reverse order because both modify the same Cursor files. The list comes from your local Codex model catalog, including each model's supported reasoning levels. The patch does not ship a fixed model list or grant access to models your account cannot use.
-
-Each subscription section carries the same usage label Cursor puts on its own, through the section component’s `titleTrailing` prop. The label shows the window that is closest to its limit, so it is the short rolling one most of the time and becomes the weekly one exactly when the week is the tighter constraint; hovering names every window. The bridge is asked at most once a minute while the picker renders, and a bridge that cannot answer leaves the section as it was.
-
-The model picker offers reasoning levels such as Low, Medium, High, Very high and Max when the model advertises them. Fast appears when the model metadata advertises a speed tier. Each reasoning level can be combined with Fast independently. Fast is off by default.
-
-A partial catalog refresh preserves previously seen models so entries such as Astra do not disappear just because one cache update omits them. An explicit hidden entry removes the model. The saved catalog is separated by account. A visible cached entry is not proof of current entitlement; the service still decides whether to accept a request.
-
-Text added by this patch is English and does not follow the account language. Existing Cursor controls, including parts of the parameter popover, still use Cursor's own localization. Model descriptions come from the local catalog. The patch does not change the language of the rest of Cursor.
-
-Cursor's **Plan & Usage** settings include a **ChatGPT Subscription** card showing the subscription plan, used allowance and reset time for each reported usage window. It refreshes every minute while the page is open. The bridge retrieves these values from ChatGPT's internal usage endpoint using the existing local sign-in. If retrieval fails, the card shows an unavailable status.
-
-Quota errors are returned as non-retryable errors so Cursor does not remain on "Planning Next Moves" while repeatedly retrying a full usage window. HTTP 429 responses are also converted to HTTP 402 for this reason, including temporary rate limits; retry those requests manually later.
-
-## Fast mode limitation
-
-Fast sends `service_tier: "priority"` in the request. In our live tests, the service returned `service_tier: "default"`, including a direct request outside the bridge. Selecting Fast therefore does not currently establish that the request will run faster.
-
-Do not assume a fixed twofold speed increase or a fixed usage multiplier. Availability, processing speed and subscription usage depend on the model and account. See OpenAI's [speed documentation](https://learn.chatgpt.com/docs/agent-configuration/speed). The selector tooltip explains the limitation as well.
-
-## Requirements
-
-* Windows x64 and one of the exact Cursor builds listed above.
-* Node.js 22 or newer on PATH. Only Node.js 26.7.0 has been tested locally.
-* A Codex executable and a ChatGPT account with access to the requested models.
-* Existing file-based Codex authentication in `auth.json` and a populated `models_cache.json` in the same Codex home.
-* Permission to modify your Cursor installation directory.
-
-This release reads file-based Codex authentication only. It does not read the Windows credential store or import browser cookies. API-key-only authentication is not supported. Refer to OpenAI's [authentication documentation](https://learn.chatgpt.com/docs/auth) for sign-in and credential storage options.
-
-## Install
-
-Clone this repository into a local directory, then open a terminal there:
-
-```powershell
-git clone https://github.com/vertexitde/cursor-gpt-link.git
-cd cursor-gpt-link
-node patcher.mjs check
-```
-
-If you have not signed in, run `codex login` and complete the ChatGPT sign-in. Open Codex once so it refreshes its model catalog. There are no npm dependencies to install.
-
-Close all Cursor windows and background processes, then run:
-
-```powershell
-npm run install-patch
-```
-
-This is equivalent to `node patcher.mjs install`. Install on original supported Cursor files. If a Claude patch is already present, restore it with its own installer first, install ChatGPT, then install Claude again.
-
-Start Cursor again and select a model with the OpenAI symbol. The bridge starts with Cursor and listens only on `127.0.0.1`. On Windows, startup replaces the existing worker for this exact bridge installation so code changes take effect. Other Node.js processes and bridge installations are not selected. A `ChatGPT: Sign in (subscription)` command is also added to the command palette. If that command does not open a browser, use `codex login` in a terminal.
-
-The installer detects common per-user and system-wide Cursor locations. It looks for the Codex desktop executable, then for `codex.exe` on PATH. For other locations:
-
-```powershell
-node patcher.mjs install --cursor-root "D:\Apps\Cursor\resources\app" --codex-path "D:\Tools\codex.exe" --codex-home "D:\MyCodexHome" --port 43188
-```
-
-`--cursor-root` must point to `resources/app`, not the directory containing `Cursor.exe`. A npm command shim such as `codex.cmd` is not accepted as the executable path.
-
-Configuration, a copy of the bridge runtime, model catalogs and original-file backups are stored in `%LOCALAPPDATA%\cursor-gpt-link`. Set `CURSOR_GPT_LINK_HOME` before running the patcher to choose a different state directory. Use the same value for subsequent status and restore commands. The runtime is copied during installation, so moving the repository afterwards does not break autostart. The Node.js executable must stay at its installation path.
-
-## Remote SSH
-
-Version 0.1.1 fixes the Remote SSH routing. Model requests run in Cursor's dedicated local runtime and reach the bridge on your PC. Tool calls use Cursor's existing workspace execution path, so file edits and commands still run on the SSH host. The existing approval and cancellation paths are retained.
-
-The remote host does not need Codex CLI, a ChatGPT sign-in, copied account credentials or a forwarded bridge port. Use your existing local sign-in and reload the SSH window after applying the patch.
-
-The earlier patch ran model requests in the workspace extension host. In an SSH session that process runs on the remote machine, where `127.0.0.1` refers to that machine rather than your PC. The dedicated runtime existed in Cursor but was disabled by default. This patch makes it available and selects it for ChatGPT models in remote workspaces. Other models retain their existing runtime selection.
-
-Responses and remote file edits have been confirmed in a manual SSH test after the fix. Both workbench routing methods are checked against the supported builds. Separate manual Agents Window coverage is still pending.
-
-To upgrade an existing public installation, close Cursor, run `node patcher.mjs restore` using the same state directory, update this repository with `git pull`, then run `node patcher.mjs install`. For a private prototype, use its original restore command first.
-
-## Check or remove the patch
-
-```powershell
-node patcher.mjs status
-```
-
-To remove only this ChatGPT patch, close Cursor and run:
-
-```powershell
-npm run uninstall
-```
-
-This is equivalent to `node patcher.mjs restore`. If Claude is also installed, remove it first with `npm run uninstall` in its repository. Then remove ChatGPT. Backups restore the state before each patch; removing the underlying patch first can invalidate the other installation manifest.
-
-Restore verifies both the installed files and the backups before copying originals back. Backups are retained. It refuses to overwrite files changed by a Cursor update or another patch. If an update has replaced the application, use a clean Cursor installation instead of forcing old backups over the new version. The patcher has no force option.
-
-Restoring removes the autostart code. An already running bridge can remain until it is stopped or Windows is restarted. It accepts requests only with its local key. You can inspect its process command line for the `cursor-gpt-link\runtime\bridge.mjs` path before stopping that process. The patcher does not stop unrelated Node.js processes.
-
-Cursor updates can remove this patch. New builds need separate review, new anchors and new verification. Do not change the supported version number to bypass the checks.
-
-If you used an earlier private prototype, restore it using its own installer before installing this release. Its backups and state are separate.
-
-## How it works
-
-The patch changes the desktop workbench, the Agents Window workbench, both local agent runtime bundles, the main-process startup file and the corresponding workbench checksum in `product.json`.
-
-Only model IDs beginning with `chatgpt-codex/` use the bridge. Cursor continues to run its local agent and handle tools and approvals. The bridge translates the request into the streaming Responses format and sends it to `https://chatgpt.com/backend-api/codex/responses`. This is an internal service endpoint, not a supported public integration contract.
-
-Codex is used for sign-in and token renewal, not as the agent harness. The bridge reads the existing access token and account ID and asks Codex to refresh authentication after an unauthorized response. It does not implement a separate OAuth client or bundle anyone's credentials.
-
-Prompts, attachments and tool data in the forwarded request are sent to OpenAI. The bridge does not add request logging. Account credentials are not inserted into Cursor bundles; a generated local bridge key is inserted instead. Local programs running as your user can read that key and the state directory. Do not share your state directory, patched bundles, authentication files or backups.
-
-## Attachments
-
-The Responses request preserves image and file content, including PDFs. Vision support in the picker follows the account's model catalog. Image color recognition and PDF content reading were verified through the local subscription bridge on September 11, 2026. Cursor controls which attachment formats reach the runtime; this does not add every upload feature from the ChatGPT website.
-
-The bridge accepts requests up to 64 MiB including JSON and base64 overhead. Provider file-size and model-context limits still apply. Files remain in memory for forwarding; the bridge does not add an upload cache or fetch local paths.
-
-Run `npm run test:attachments` against an installed bridge to repeat the image and PDF checks. It consumes subscription usage and uses the same `CURSOR_GPT_LINK_HOME` as the installer.
-
-## Limitations
-
-* Remote SSH responses and file edits are confirmed in the tested setup. Other remote configurations and separate Agents Window SSH coverage still need testing.
-* Only the listed Windows x64 client builds are supported. macOS and Linux clients, other remote environments and cloud agents are untested.
-* Tool calls and file edits work in manual local Cursor testing. Separate coverage of the IDE and Agents Window, including approvals and cancellation, has not yet been recorded.
-* Authentication formats, model metadata and the internal endpoint can change independently of Cursor.
-* The bridge uses Codex's local model cache. After switching accounts, open Codex to refresh its cache and reload the Cursor window. A stale cache may temporarily show models the new account cannot use.
-* Initial model entries are embedded when installing. Refreshing the picker normally replaces them with the bridge catalog; an unavailable bridge can leave stale entries visible.
-* The bridge is a Responses adapter, not an implementation of every OpenAI API feature. Voice, video, image generation and every model-specific feature have not been validated.
-
-## Development
-
-```powershell
-npm test
-node scripts/verify-build.mjs "C:\Path\To\Original\Cursor\resources\app"
-node scripts/derive-symbols.mjs "C:\Path\To\Original\Cursor\resources\app"
-```
-
-`derive-symbols` locates each minified workbench symbol by the role it plays rather than by name, and fails if a match is missing or ambiguous. Run it against the previous build first: reproducing that build's reviewed values is what makes the output for a new one trustworthy. Names are recycled between builds, so the result is reviewed and committed as a build's patch definitions instead of being derived at install time.
-
-Unit tests use synthetic credentials and model data and do not make requests to OpenAI. The optional build verification reads original Cursor files locally, validates hashes, generates candidate patches in a temporary directory, checks syntax and exercises reasoning and Fast forwarding. It does not modify Cursor. No Cursor binaries, bundled source, model caches or account files are distributed here.
-
-When reporting a problem, include your Cursor version and commit, operating system, Node.js version and a redacted error message. Do not attach `auth.json`, `config.json`, model caches, patched application files or backup directories.
-
-## Legal Disclaimer & Terms of Service Notice
-
-- **Educational & PoC Only:** This project is an independent open-source proof-of-concept for educational purposes.
-- **No Affiliation:** This project is not affiliated with, maintained, sponsored, or endorsed by Anysphere (Cursor) or OpenAI.
-- **Use at Your Own Risk:** Modifying software binaries or patching client environments may violate the Terms of Service of Cursor and/or OpenAI.
-- **Account Safety:** The maintainers are not responsible for suspended accounts, lost access, or any damages caused by using this patch.
-
-## License
-
-The patcher and bridge source are provided under the [MIT license](LICENSE). That license does not apply to Cursor, Codex or OpenAI services. See [third-party notices](THIRD_PARTY_NOTICES.md) for the icon source.
+账号文件、bridge 密钥、完整 Cursor 应用、聊天记录、模型目录和本机日志不会提交。源码保留已有企业网络所需的 bridge TLS 配置；不修改系统证书或全局 Git 配置。

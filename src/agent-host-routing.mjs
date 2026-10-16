@@ -7,7 +7,7 @@ export function createChatgptExecutionStrategy(primary, local) {
   return {
     executeTurn(turn) {
       const model = turn.runOptions?.requestedModel?.modelId ?? turn.modelDetails?.modelId;
-      const strategy = typeof model === 'string' && model.startsWith('chatgpt-codex/') ? local : primary;
+      const strategy = typeof model === 'string' && (model.startsWith('chatgpt-codex/') || model.startsWith('claude-subscription/')) ? local : primary;
       return strategy.executeTurn(turn);
     },
     dispose() { try { primary.dispose?.(); } finally { local.dispose?.(); } }

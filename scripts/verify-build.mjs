@@ -13,7 +13,7 @@ import os from 'node:os';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {buildPatches} from '../src/patches.mjs';
+import {buildPatches} from '../src/combined-patches.mjs';
 import {supportedBuild} from '../src/supported-builds.mjs';
 import {verifySubagentRegistration} from './subagent-registration-check.mjs';
 import {verifyWorkbenchRouting} from './workbench-routing-check.mjs';
@@ -27,7 +27,7 @@ for (const [relative, expected] of Object.entries(build.files)) {
 }
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'cursor-gpt-link-build-'));
 try {
-  const pending = buildPatches({root, cfg:{port:43187, key:'synthetic-test-key'}, models:[],
+  const pending = buildPatches({root, cfg:{port:43187, claudePort:43188, key:'synthetic-test-key'}, models:[], claudeCatalog:[{value:'opus',displayName:'Opus',resolvedModel:'claude-opus-5-5',supportedEffortLevels:['low','high']}],
     nodePath:process.execPath, bridgePath:path.join(temp, 'bridge.mjs'), stateDir:temp});
   for (let i = 0; i < pending.length; i++) {
     const file = pending[i];
@@ -38,9 +38,9 @@ try {
     console.log('Syntax and unique anchors: ' + path.relative(root, file.path));
     if (file.path.includes('workbench.')) {
       if(atLeast(build.version,'3.24.12'))verifyAgentHostRouting(file.content);
-      if(atLeast(build.version,'3.20.23'))verifySubscriptionUi(file.content);
-      if(atLeast(build.version,'3.20.21'))await verifyConversationActionsWorkbench(file.content,['chatgpt-codex/']);
-      if(atLeast(build.version,'3.20.21')){verifyMaxMode(file.content);await verifySubagentLifecycle(file.content,['chatgpt-codex/']);}
+      if(atLeast(build.version,'3.20.23'))verifySubscriptionUi(file.content,['chatgpt','claude']);
+      if(atLeast(build.version,'3.20.21'))await verifyConversationActionsWorkbench(file.content,['chatgpt-codex/','claude-subscription/']);
+      if(atLeast(build.version,'3.20.21')){verifyMaxMode(file.content);await verifySubagentLifecycle(file.content,['chatgpt-codex/','claude-subscription/']);}
       await verifyWorkbenchRouting(file.content, build.version);
       if(atLeast(build.version,'3.20.17'))await verifySubagentRegistration(file.content);
       console.log('Native workbench SSH routing and workspace resources: passed');
@@ -66,6 +66,12 @@ try {
         assert.equal(request.service_tier, fast === 'true' ? 'priority' : undefined);
       }
     }
+    for(const effort of ['low','medium','high','xhigh','max']){
+      const request={service_tier:'priority'};
+      normalize(request,'claude-subscription/opus',[{id:'reasoning',value:effort},{id:'context',value:'200000'}],'openai_compatible');
+      assert.equal(request.reasoning.effort,effort);assert.equal(request.claude_context,200000);assert.equal(request.service_tier,undefined);
+    }
+    verifyContextBudget(file.content,{id:'claude-subscription/opus',context_window:200000,capabilities:{context_length:200000}});
     const other = {};
     normalize(other, 'other-model', [], 'openai_compatible');
     assert.deepEqual(other, {});
