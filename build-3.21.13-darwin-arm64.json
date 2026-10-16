@@ -1,0 +1,15 @@
+{
+  "version": "3.21.13",
+  "commit": "e44a49c17e334d442e58bbde931d791200f014a0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "osMinimum": "26.0",
+  "files": {
+    "out/vs/workbench/workbench.desktop.main.js": "30dd57f947cb88810c6fefd0d188fdc53d2f29145254012ae76a558325f779f2",
+    "out/vs/workbench/workbench.glass.main.js": "e91a71060cd7121cc82586c87c99c7481b1c6eef1d768e47fb9975fd0bd24f33",
+    "extensions/cursor-agent-exec/dist/main.js": "5e08d93f0e368b700f419bb7a13a304861c1fc4750b48d55d14713bce150361c",
+    "extensions/cursor-local-agent-runtime/dist/main.js": "642ae26a5b1de085607e6f6a5d200b826882a97996c125a38f6bb968e8d1b8c5",
+    "out/main.js": "559a864e16e7f3016e62475ab13b771d0cdf2ec003ce7057b0c371419502c02c",
+    "product.json": "6bdcd77801870d5c65b840d477f12d28e6c7d1734ace43227308403726ca878f"
+  }
+}
