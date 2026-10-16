@@ -57,3 +57,14 @@ node scripts/verify-build.mjs /path/to/official/Cursor.app/Contents/Resources/ap
 覆盖源项目单元测试、组合运行、应用替换和中断恢复、实际 native JS 锚点、两类模型路由、Fast/Effort/Context 参数，以及完整官方签名恢复。实机结果见 [VALIDATION.md](VALIDATION.md)。
 
 账号文件、bridge 密钥、完整 Cursor 应用、聊天记录、模型目录和本机日志不会提交。源码保留已有企业网络所需的 bridge TLS 配置；不修改系统证书或全局 Git 配置。
+
+## 来源同步
+
+```sh
+./sync-upstream
+./sync-upstream --no-push
+```
+
+同步要求干净的 `main` 且与 `origin/main` 一致，自动配置缺少的来源 remote，创建备份引用，整合 GPT 基线和 Claude subtree，运行全部回归，再使用精确远端 SHA 的 lease 推送。冲突或测试失败时恢复原分支；远端并发更新时保留本地已验证结果。
+
+原 GPT fork 继续 rebase vertexitde 上游，组合仓库合并两个来源的更新以保留 subtree 历史。每周任务只维护仓库；实际更新 Cursor 通过 `./cursor-link install` 完成。
