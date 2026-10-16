@@ -7,7 +7,8 @@ Updated on September 29, 2026.
 | Component | Version |
 | --- | --- |
 | Operating system | Windows, x64 |
-| Cursor | 3.24.12, 3.22.12, 3.22.9, 3.22.5, 3.21.18, 3.21.16, 3.21.13, 3.21.12, 3.21.9, 3.21.1, 3.20.23, 3.20.21, 3.20.17, 3.20.11 and 3.20.7 |
+| Cursor | 3.25.9, 3.24.12, 3.22.12, 3.22.9, 3.22.5, 3.21.18, 3.21.16, 3.21.13, 3.21.12, 3.21.9, 3.21.1, 3.20.23, 3.20.21, 3.20.17, 3.20.11 and 3.20.7 |
+| Cursor 3.25.9 commit | `5d4df965746c5d09740842fc0f1331ba1c157830` |
 | Cursor 3.24.12 commit | `37b865941ccb31e2fc90c685157534efca87f960` |
 | Cursor 3.22.12 commit | `3a92974361033b2051526321308c2740fe5912c0` |
 | Cursor 3.22.9 commit | `2ca0f45baa06796a86f6c6ba2b9bedacaf94c370` |
@@ -68,6 +69,10 @@ Verified without touching an installation, against copies of the original 3.22.9
 - a dry run on a copy of a real configuration, with `ssh -G` used to confirm that OpenSSH parses the result, attaches the three forwards to a configured host and leaves an unrelated host without any.
 
 Not yet confirmed: a live remote turn. The host's own runtime under `~/.cursor-server` is unpatched, so reasoning effort forwarding and the subagent model repairs are missing there.
+
+## Cursor 3.25.9 update
+
+Cursor 3.25.9 is supported through its symbol table and file hashes alone; no installer or patch module of its own was needed. The extractor matched every role (47 of 52 names changed in the editor, 42 in the Agents Window). Four anchors moved: the Agents Window has a second fragment that ends in the same names as the picker sections, so the sections are now inserted after the picker's own fragment; the transcript cache now drops itself when the raw conversation map is replaced, which makes the cache repair unnecessary on this build; the prompt session takes retry options; and the subagent model resolver was rewritten around one classifying lookup. It still rejects an empty model, so the normalisation stays. The checks bind the new helpers by role and find function ends by parsing. All automated checks pass on 3.25.9, and the reviewed 3.24.12 and 3.22.12 trees still verify.
 
 ## Cursor 3.24.12 update
 

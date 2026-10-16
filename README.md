@@ -8,8 +8,9 @@ This release targets the reviewed Windows builds listed below. It is not a gener
 
 | Item | Current status |
 | --- | --- |
-| Cursor | 3.24.12, 3.22.12, 3.22.9, 3.22.5, 3.21.18, 3.21.16, 3.21.13, 3.21.12, 3.21.9, 3.21.1, 3.20.23, 3.20.21, 3.20.17, 3.20.11 and 3.20.7, Windows x64 |
-| Latest Cursor commit | `37b865941ccb31e2fc90c685157534efca87f960` (3.24.12) |
+| Cursor | 3.25.9, 3.24.12, 3.22.12, 3.22.9, 3.22.5, 3.21.18, 3.21.16, 3.21.13, 3.21.12, 3.21.9, 3.21.1, 3.20.23, 3.20.21, 3.20.17, 3.20.11 and 3.20.7, Windows x64 |
+| Latest Cursor commit | `5d4df965746c5d09740842fc0f1331ba1c157830` (3.25.9) |
+| Cursor 3.24.12 commit | `37b865941ccb31e2fc90c685157534efca87f960` |
 | Cursor 3.22.12 commit | `3a92974361033b2051526321308c2740fe5912c0` |
 | Cursor 3.22.9 commit | `2ca0f45baa06796a86f6c6ba2b9bedacaf94c370` |
 | Cursor 3.22.5 commit | `a00aa8754ab5bae70b637d98e126f9dbd4e1e5d0` |
@@ -22,7 +23,7 @@ This release targets the reviewed Windows builds listed below. It is not a gener
 | Previous Cursor commit | `b23e0e2d3c0fc9bb9311f4390230a120ccc9aa50` (3.20.23) |
 | Cursor 3.20.11 commit | `69d099d6568dc97e110ba8184614faf51c4040b0` |
 | Oldest Cursor commit | `979197d5570b168c034c634b3e21f2bea3ea5be0` (3.20.7) |
-| Latest local test date | October 12, 2026 |
+| Latest local test date | October 16, 2026 |
 | Node.js used for testing | 26.7.0 |
 | Codex CLI used for testing | 0.153.4 |
 | Text generation through the bridge | Verified with GPT-6 Astra |
@@ -34,6 +35,8 @@ This release targets the reviewed Windows builds listed below. It is not a gener
 | Fast mode | Selector and request forwarding verified; actual priority processing not confirmed |
 
 Remote SSH sessions changed with 3.22.9. Until then a remote session kept the agent in Cursor's dedicated UI runtime so that the bridge, which listens on the client's loopback, stayed reachable. That runtime resolves paths with the client's own path module: on a Windows client against a Linux host, the workspace path `/srv/app` became `C:\\srv\\app`, and the runtime then looked there for `.cursor/rules`, ran `git rev-parse` in it, walked its ignore files up to the drive root and built the sandbox policy from it. From 3.22.9 the agent runs on the SSH host, where the workspace actually is, and the bridge is published on that host's loopback with an ssh reverse forward that `cursor-gpt-link` writes into `~/.ssh/config`. See [Remote sessions](#remote-sessions).
+
+Cursor 3.25.9 is supported through its symbol table and file hashes alone; no installer or patch module of its own was needed. The extractor matched every role (47 of 52 names changed in the editor, 42 in the Agents Window). Four anchors moved: the Agents Window has a second fragment that ends in the same names as the picker sections, so the sections are now inserted after the picker's own fragment; the transcript cache now drops itself when the raw conversation map is replaced, which makes the cache repair unnecessary on this build; the prompt session takes retry options; and the subagent model resolver was rewritten around one classifying lookup. It still rejects an empty model, so the normalisation stays. The checks bind the new helpers by role and find function ends by parsing. All automated checks pass on 3.25.9, and the reviewed 3.24.12 and 3.22.12 trees still verify.
 
 Cursor 3.24.12 (3.23 was skipped) is the first build supported through its symbol table alone. A build is now its reviewed `src/symbols-<version>.json` and `src/supported-build-<version>.json`; `src/patches-generic.mjs` holds the patch logic once and reproduced the reviewed 3.22.12 output byte for byte before it was used here. The builds up to 3.22.12 keep the patches they were reviewed with. The release changed more than names: the model picker went through the React compiler, so the subscription sections now go into a memoized fragment that is rebuilt while they exist; the run gate no longer passes `localMode` in its options; both runtime bundles ship native `??`, `?.`, async functions and object spreads; the two protobuf messages the action manager uses were renamed (`QF` to `QFf`, `RG` to `RGk`) and are now found by their role; and the engine's run parameters rotated. All automated checks pass and the three patches were checked together. Live model selection, tool calls, file edits, remote SSH and attachment workflows have not been confirmed on this build.
 
