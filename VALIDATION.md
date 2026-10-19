@@ -44,3 +44,15 @@ Claude 请求显式设置 `fastMode: false`。未启用 usage credits，没有�
 本机 JavaScript 测试为 217 项通过、3 项因平台或系统版本跳过；Python 应用管理和同步测试为 13 项通过。CI 矩阵覆盖 macOS 15、macOS 26、Windows，Node 22 和 24。Windows 只运行适用的 JavaScript 测试，POSIX 应用恢复场景在 macOS 执行。
 
 本次未执行 500K 实际填满、SSH 远端组合安装和 Remote Control 云端运行；GPT 长输出速度沿用上述历史测速记录。大上下文预算及参数保持通过原始 native JavaScript 验证；Remote Control 对本地订阅模型给出明确拒绝并保留草稿。
+
+## 2026-10-19 来源维护
+
+已同步 GPT 上游 `f0fee5e` 和 Claude 上游 `4b08801`，两个 leereliu 来源提交记录在 `SOURCES.json`。Artic0din 各分支没有新提交，已有 cherry-pick 作者和来源记录保留。
+
+此次加入 Cursor 3.25.9 Windows 指纹、符号表及 picker、子任务和重试参数兼容逻辑。两个 provider 共用的上游经典 agent 路径补丁已整合，保留本机模型路由和共享 provider 注册。组合 macOS 安装仍限定 3.24.12，未将 Windows 新版本标记为 macOS 已验证。
+
+GPT rebase 与组合合并最初遇到冲突，同步入口均恢复原分支并保留备份。随后审核差异，保留组合安装、双 provider、来源同步及 Fast 测速文档，完成冲突处理；组合仓库使用 merge 和 Claude subtree，未重写整个组合历史。
+
+回归结果：组合仓库 JavaScript 217 项通过、3 项平台跳过，Python 13 项通过，Claude 源码语法和构建元数据检查通过。针对本机官方 3.24.12 备份，在临时目录生成候选补丁，两个 workbench 和两个 runtime 的语法、经典 agent 路径、订阅路由、provider 注册、Fast/Effort/Context 及工具生命周期检查通过。
+
+维护只更新源码。只读状态检查确认现有安装仍为 patched 3.24.12，安装来源仍为 `e44abf11d11f498b35453d37d2803b887b15b28d`，官方备份验证通过。没有安装新补丁、重启 Cursor、启用 Claude Fast 或运行模型测速；此次恢复测试使用临时 fixture，实机恢复记录仍为 2026-10-16 的结果。
