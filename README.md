@@ -8,6 +8,8 @@
 
 本次适配 macOS 15.7.3、Apple Silicon、Cursor 3.24.12，Cursor commit 为 `37b865941ccb31e2fc90c685157534efca87f960`。安装前校验官方应用签名、版本和六个原始文件的 SHA-256。未知版本会在修改应用前退出。
 
+2026-10-19 已同步来源项目新增的 Cursor 3.25.9 Windows 指纹和兼容逻辑；本仓库的组合安装仍限定已审核的 macOS Cursor 3.24.12。
+
 Node.js 22+、Python 3、已经登录的 Codex CLI 与 Claude Code CLI 是安装依赖。Claude 模型目录通过本机 CLI initialize 协议获取。
 
 ## 安装与恢复
@@ -38,7 +40,7 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 | GPT Context | 模型目录中的默认窗口；目录上限允许且默认小于 500K 时增加 500K |
 | Claude | 已有 Claude Code 登录、实时模型目录、支持的 Effort 和上下文选项 |
 | Claude Fast | 当前明确关闭。保留普通订阅模式，界面不提供无法转发的开关 |
-| Agent Host | 两种订阅模型均进入本地执行路径；普通 Cursor 模型保持原路径 |
+| Agent Host | 两种订阅模型均进入本地执行路径；3.24.12 起按上游兼容补丁统一使用经典 agent 路径 |
 | 工具调用 | Claude 结构化输出转换为 Cursor 工具请求；执行结果进入后续请求 |
 | 使用量 | 两个订阅分别显示用量，不输出账号凭据 |
 | 恢复 | 一次切换恢复完整的官方应用和原自动更新设置 |

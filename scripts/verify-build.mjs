@@ -17,6 +17,7 @@ import {buildPatches} from '../src/combined-patches.mjs';
 import {supportedBuild} from '../src/supported-builds.mjs';
 import {verifySubagentRegistration} from './subagent-registration-check.mjs';
 import {verifyWorkbenchRouting} from './workbench-routing-check.mjs';
+import {verifyAgentHost} from './agent-host-check.mjs';
 import {atLeast} from '../src/versions.mjs';
 
 const root = process.argv[2];
@@ -42,6 +43,7 @@ try {
       if(atLeast(build.version,'3.20.21'))await verifyConversationActionsWorkbench(file.content,['chatgpt-codex/','claude-subscription/']);
       if(atLeast(build.version,'3.20.21')){verifyMaxMode(file.content);await verifySubagentLifecycle(file.content,['chatgpt-codex/','claude-subscription/']);}
       await verifyWorkbenchRouting(file.content, build.version);
+      if(atLeast(build.version,'3.24.12'))verifyAgentHost(file.content);
       if(atLeast(build.version,'3.20.17'))await verifySubagentRegistration(file.content);
       console.log('Native workbench SSH routing and workspace resources: passed');
     }

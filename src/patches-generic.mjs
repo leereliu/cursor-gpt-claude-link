@@ -17,6 +17,7 @@ import {usageSectionSrc} from './usage-section.mjs';
 import {wrapRuntime} from './patches-runtime.mjs';
 import {pickerSectionHelpersSrc, patchPickerSections} from './picker-sections.mjs';
 import {usageLabelHelpersSrc} from './usage-label.mjs';
+import {patchAgentHost} from './agent-host.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -112,7 +113,7 @@ export function patchWorkbench(source, surface, s, prelude) {
   // Remote sessions run on the SSH host from 3.22.9 on, so nothing is rerouted.
   source = patchSubagentBubbles(source, surface, s);
   source = patchSubagentLifecycle(source, surface, prefix, s);
-  return patchConversationActionsWorkbench(patchAgentHostRouting(source), surface, prefix);
+  return patchAgentHost(patchConversationActionsWorkbench(patchAgentHostRouting(source), surface, prefix));
 }
 
 export function buildPatches({root, cfg, models, nodePath, bridgePath, stateDir, symbols}) {
