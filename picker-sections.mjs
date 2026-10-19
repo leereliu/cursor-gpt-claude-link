@@ -44,7 +44,14 @@ export function insertCompiledSections(source, replaceOnce, {modelsVar, sections
   // The list ends in the promoted, pinned and other sections whatever was put
   // in front of them, so a link that comes second still finds its place.
   const tail = `,${parts.promoted},${parts.pinned},${parts.others}]})`;
-  return replaceOnce(source, tail, ',' + sections + tail);
+  // 3.25's Agents Window has a second fragment ending in the same names, so
+  // the tail is looked for only after this picker's own fragment.
+  const fragment = `(${parts.result}=${parts.fragment}(${parts.component},{children:[${parts.leading},`;
+  const start = source.indexOf(fragment);
+  if (start < 0 || source.indexOf(fragment, start + 1) >= 0) throw new Error('Picker sections fragment is missing or not unique');
+  const at = source.indexOf(tail, start);
+  if (at < 0) throw new Error('Picker sections tail not found');
+  return source.slice(0, at) + ',' + sections + source.slice(at);
 }
 
 export function patchPickerSections(source, replaceOnce, symbols) {
