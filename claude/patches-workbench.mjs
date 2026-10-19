@@ -11,6 +11,7 @@ import {patchSubagentSettingsWorkbench} from './subagent-settings.mjs';
 import {patchSubagentBubbles} from './subagent-bubbles.mjs';
 import {patchSubagentLifecycle} from './subagent-lifecycle.mjs';
 import {patchConversationActionsWorkbench} from './conversation-actions.mjs';
+import {patchAgentHost} from './agent-host.mjs';
 
 const prefix = 'claude-subscription/';
 
@@ -70,5 +71,5 @@ export function patchClaudeWorkbench(source, surface, s, {once, prelude}) {
   source = patchMaxMode(patchSubagentSettingsWorkbench(source));
   source = patchSubagentBubbles(source, surface, s);
   source = patchSubagentLifecycle(source, surface, prefix, s);
-  return patchConversationActionsWorkbench(source, surface, prefix);
+  return patchAgentHost(patchConversationActionsWorkbench(source, surface, prefix));
 }
