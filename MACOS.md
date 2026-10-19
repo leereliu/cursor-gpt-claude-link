@@ -58,9 +58,11 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 | Context | 第一项来自当前模型目录的 `context_window`，显示 `Codex default`；默认低于 500K 且目录允许时，增加 500K；相同值只显示一次 |
 | Reasoning | 保留模型支持的推理强度；切换上下文不清除 Fast 或推理强度 |
 | Cursor 3.24 发送 | `chatgpt-codex/` 模型进入本地 agent-exec，并确保 Agent Host 激活时注册本地 provider |
-| 普通模型 | 保持 Cursor 原生执行策略 |
+| 普通模型 | 保留 Cursor 原生模型；3.24.12 起按上游兼容补丁统一使用经典 agent 路径 |
 | 官方恢复 | 切换完整的、经 codesign 验证的官方应用；恢复原自动更新配置 |
 | 本机 bridge | 本地认证、自动启动、已有 Codex 登录；不上传账号文件到仓库 |
+
+上游 2026-10-19 同步加入 Cursor 3.25.9 的 Windows 指纹和符号表；macOS 仍仅声明上述已审核构建。经典 agent 路径补丁与本 fork 的订阅路由、共享 provider 注册共同保留，避免模型 ID 进入无法识别它的远端路径。
 
 Fast 是否获得优先处理由服务端决定，代码保留真实返回的 tier，不保证固定倍率。2026-10-14 的本地 UI 验证完成 GPT-6.1-Sol Very high + Fast 的文件写入和读取；长输出速度基准未在此次仓库整理中重跑。
 
