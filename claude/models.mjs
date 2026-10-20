@@ -7,7 +7,7 @@ import fs from 'node:fs';
 const claudeIcon=fs.readFileSync(new URL('./claude.svg',import.meta.url),'utf8').trim()
   .replace('<svg ', '<svg width="12" height="12" aria-hidden="true" style="display:inline-block;vertical-align:-2px;margin-right:6px;flex:none" ');
 
-const effortName=value=>value==='xhigh'?'Very high':value[0].toUpperCase()+value.slice(1);
+const effortName=value=>value==='xhigh'?'Extra High':value[0].toUpperCase()+value.slice(1);
 const escape=value=>value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 export function pickerModels(catalog) {
   return modelOptions(catalog).map(model=>{

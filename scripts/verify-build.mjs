@@ -1,4 +1,5 @@
 import {verifyAgentHostRouting, verifySharedLocalProvider} from './agent-host-routing-check.mjs';
+import {verifySubagentDisplay} from './subagent-display-check.mjs';
 import {verifySubscriptionUi} from './subscription-ui-check.mjs';
 import {verifyConversationActionsWorkbench,verifyConversationActionsRuntime} from './conversation-actions-check.mjs';
 import {verifySubagentLifecycle} from './subagent-lifecycle-check.mjs';
@@ -38,6 +39,7 @@ try {
     execFileSync(process.execPath, ['--check', candidate], {stdio:'pipe', windowsHide:true});
     console.log('Syntax and unique anchors: ' + path.relative(root, file.path));
     if (file.path.includes('workbench.')) {
+      verifySubagentDisplay(file.content);
       if(atLeast(build.version,'3.24.12'))verifyAgentHostRouting(file.content);
       if(atLeast(build.version,'3.20.23'))verifySubscriptionUi(file.content,['chatgpt','claude']);
       if(atLeast(build.version,'3.20.21'))await verifyConversationActionsWorkbench(file.content,['chatgpt-codex/','claude-subscription/']);

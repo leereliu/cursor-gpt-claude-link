@@ -36,11 +36,12 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 
 | 功能 | 行为 |
 | --- | --- |
-| GPT | 已有 Codex 登录、Fast priority、模型支持的推理强度 |
+| GPT | 已有 Codex 登录、Fast priority、模型支持的推理强度；`xhigh` 显示为 `Extra High` |
 | GPT Context | 模型目录中的默认窗口；目录上限允许且默认小于 500K 时增加 500K |
 | Claude | 已有 Claude Code 登录、实时模型目录、支持的 Effort 和上下文选项 |
 | Claude Fast | 当前明确关闭。保留普通订阅模式，界面不提供无法转发的开关 |
 | Agent Host | 两种订阅模型均进入本地执行路径；3.24.12 起按上游兼容补丁统一使用经典 agent 路径 |
+| 子任务卡片 | 使用子任务实际保存的推理、Fast 和上下文参数；参数未加载时只显示模型名称 |
 | 工具调用 | Claude 结构化输出转换为 Cursor 工具请求；执行结果进入后续请求 |
 | 使用量 | 两个订阅分别显示用量，不输出账号凭据 |
 | 恢复 | 一次切换恢复完整的官方应用和原自动更新设置 |

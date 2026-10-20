@@ -197,7 +197,7 @@ test('each Claude variant describes its selected context and effort',()=>{
   const context=v.parameterValues.find(p=>p.id==='context')?.value;
   const text=v.tooltipData.markdownContent;
   assert.ok(text.includes(context==='1000000'?'1M context window':'200k context window'));
-  if(effort)assert.ok(text.endsWith('*Version: '+(effort==='xhigh'?'very high':effort)+' effort*'));
+  if(effort)assert.ok(text.endsWith('*Version: '+(effort==='xhigh'?'Extra High':effort)+' effort*'));
   else assert.equal(text.includes('Version:'),false);
   assert.equal(text.includes('Context:'),false);
  }

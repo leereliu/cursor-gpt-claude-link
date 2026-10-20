@@ -177,7 +177,7 @@ test('each picker variant describes its selected effort and context',()=>{
   const effort=v.parameterValues.find(p=>p.id==='reasoning').value;
   const text=v.tooltipData.markdownContent;
   assert.match(text,/1k context window/);
-  assert.ok(text.includes('*Version: '+(effort==='xhigh'?'very high':effort)+' effort'));
+  assert.ok(text.includes('*Version: '+(effort==='xhigh'?'Extra High':effort)+' effort'));
   assert.equal(text.includes(', fast*'),v.parameterValues.find(p=>p.id==='fast').value==='true');
  }
 });

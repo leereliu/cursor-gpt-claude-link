@@ -35,7 +35,7 @@ test('unknown patch anchors fail before returning a modified bundle',()=>{
 });
 test('model tooltip matches Cursor title, context and italic effort layout',()=>{
  assert.equal(modelTooltip('Model','Description',256000,'high').markdownContent,'**Model**  \nDescription\n\n256k context window\n\n*Version: high effort*');
- assert.match(modelTooltip('Model','Description',1000000,'xhigh',true).markdownContent,/1M context window\n\n\*Version: very high effort, fast\*$/);
+ assert.match(modelTooltip('Model','Description',1000000,'xhigh',true).markdownContent,/1M context window\n\n\*Version: Extra High effort, fast\*$/);
  assert.equal(modelTooltip('Model','Description',200000).markdownContent.includes('Version:'),false);
  assert.ok(modelTooltip('<Model>','[link](url)',200000,'low').markdownContent.includes('\\<Model\\>'));
 });

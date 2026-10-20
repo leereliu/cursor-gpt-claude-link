@@ -56,7 +56,7 @@ export function supportsFast(model) {
   return model.service_tiers?.some(t=>t.id==='priority') || model.additional_speed_tiers?.includes('fast') || false;
 }
 export function pickerModel(m) {
-  const labels={none:'None',minimal:'Minimal',low:'Low',medium:'Medium',high:'High',xhigh:'Very high',max:'Max',ultra:'Ultra'};
+  const labels={none:'None',minimal:'Minimal',low:'Low',medium:'Medium',high:'High',xhigh:'Extra High',max:'Max',ultra:'Ultra'};
   const fastAvailable=supportsFast(m);
   const contexts=contextSizes(m),standardContext=contexts[0],fullContext=contexts.at(-1);
   const fastTooltip='Enable Fast mode using the same priority routing as Codex. Fast uses more of your ChatGPT allowance. Availability and speed depend on the model and your account. [Details](https://learn.chatgpt.com/docs/agent-configuration/speed)';
