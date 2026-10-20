@@ -68,3 +68,13 @@ Astra 参数菜单显示 Codex default · 272K 和 500K；实际完成两档切�
 实际完成新补丁版 → 官方版 → 新补丁版，官方签名与补丁文件 SHA-256 验证通过。安装来源记录为 `94dd0e9d9d2d3b6c6b18aa86180f0b8ed752fa03`，独立 switch-version.py 官方恢复入口保持可用。
 
 本机 JavaScript 共 221 项通过、3 项平台跳过，Python 13 项通过；两个 workbench 的实际显示函数与原始 JavaScript 生成检查通过。修复提交的 GitHub Actions 全部通过。Fast 验收检查参数转发及现有测速记录，未重复执行速度基准或填满大上下文。
+
+## 2026-10-20 完成后默认折叠过程
+
+代码提交 `2df3c1b` 将 desktop 与 glass 的原生完成过程分组默认值设为关闭。运行中的过程继续显示，最终回复保留在分组之外，用户仍可点击 Worked for 手动展开和折叠。未知版本、重复或不唯一的补丁锚点会拒绝生成。
+
+已重新安装到本机 Cursor 3.24.12，并新建 This Mac / No Repo 对话，使用 Grok 4.7 Extra High Fast 连续执行两轮验收。第一轮调用两次 Shell，完成后显示 Worked for 12s 与 `COLLAPSE_DONE_A`；第二轮调用一次 Shell，运行中可见独立过程说明与 Running 状态，完成后显示 Worked for 10s 与 `COLLAPSE_DONE_B`。两轮完成时均未点击过程分组，过程说明和工具记录自动隐藏，最终回复直接可见。两轮分别手动展开均能看到对应说明和工具记录，之后可再次折叠；离开并重新进入对话后，两组过程保持折叠，两条结论保持可见。
+
+本机 JavaScript 共 223 项通过、3 项平台跳过，Python 13 项通过。两个真实 workbench 的生成检查均通过，覆盖原始展开行为复现、完成后折叠、活动过程、最终回复与既有 project 分组；GPT Fast/Reasoning/Context、Claude Effort/Context、Agent Host 和子任务显示回归通过。[macOS fork regressions](https://github.com/leereliu/cursor-gpt-claude-link/actions/runs/39452076151) 与 [Tests](https://github.com/leereliu/cursor-gpt-claude-link/actions/runs/39452076115) 均通过。
+
+安装来源记录为 `2df3c1bd0f82ae8da215ce1aff87ea448b410807`，当前为 patched，管理器验证官方备份通过，独立 switch-version.py 官方恢复入口保留。本次没有重复切换官方版，实机双向恢复验证沿用本文件同日的子任务显示修复记录；未重新运行 Fast 速度基准或大上下文填满测试。
