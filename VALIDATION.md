@@ -56,3 +56,15 @@ GPT rebase 与组合合并最初遇到冲突，同步入口均恢复原分支并
 回归结果：组合仓库 JavaScript 217 项通过、3 项平台跳过，Python 13 项通过，Claude 源码语法和构建元数据检查通过。针对本机官方 3.24.12 备份，在临时目录生成候选补丁，两个 workbench 和两个 runtime 的语法、经典 agent 路径、订阅路由、provider 注册、Fast/Effort/Context 及工具生命周期检查通过。
 
 维护只更新源码。只读状态检查确认现有安装仍为 patched 3.24.12，安装来源仍为 `e44abf11d11f498b35453d37d2803b887b15b28d`，官方备份验证通过。没有安装新补丁、重启 Cursor、启用 Claude Fast 或运行模型测速；此次恢复测试使用临时 fixture，实机恢复记录仍为 2026-10-16 的结果。
+
+## 2026-10-20 子任务模型显示修复
+
+代码提交 `94dd0e9` 修复 Task 卡片忽略已保存参数、按裸模型 ID 显示默认 Low 的问题。卡片使用子任务实际的 selectedModels，参数尚未加载时仅显示模型名称。GPT 与 Claude 的 xhigh 显示名称统一为 Extra High，底层参数值仍为 xhigh。
+
+在本机 Cursor 3.24.12 重新安装后，新建无仓库测试对话并创建一个未指定模型的 generalPurpose 子任务。子任务完成、尚未打开子任务页面时，父对话卡片直接显示 `GPT-6.1-Sol Extra High Fast Completed`。打开子任务后同样显示 Extra High Fast，回复为 `SUBAGENT_DISPLAY_FIXED_OK`。保存的参数为 reasoning=xhigh、fast=true、context=500000；使用已安装 runtime 的原生归一化函数得到 reasoning.effort=xhigh、service_tier=priority。
+
+Astra 参数菜单显示 Codex default · 272K 和 500K；实际完成两档切换，每次均保留 Extra High 与 Fast。GPT 与 Claude 的 loopback 模型目录正常返回，Claude 继续关闭 Fast。
+
+实际完成新补丁版 → 官方版 → 新补丁版，官方签名与补丁文件 SHA-256 验证通过。安装来源记录为 `94dd0e9d9d2d3b6c6b18aa86180f0b8ed752fa03`，独立 switch-version.py 官方恢复入口保持可用。
+
+本机 JavaScript 共 221 项通过、3 项平台跳过，Python 13 项通过；两个 workbench 的实际显示函数与原始 JavaScript 生成检查通过。修复提交的 GitHub Actions 全部通过。Fast 验收检查参数转发及现有测速记录，未重复执行速度基准或填满大上下文。
