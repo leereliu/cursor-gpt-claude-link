@@ -8,6 +8,7 @@ import {pickerModels} from '../claude/models.mjs';
 import {pickerSectionHelpersSrc} from '../claude/picker-sections.mjs';
 import {usageLabelHelpersSrc} from '../claude/usage-label.mjs';
 import {patchSubagentDisplay} from './subagent-display.mjs';
+import {patchCompletedWork} from './completed-work.mjs';
 
 const once=(source,before,after)=>{
   if(source.split(before).length!==2)throw new Error('Combined patch anchor is not unique: '+before.slice(0,100));
@@ -30,7 +31,7 @@ ${usageLabelHelpersSrc}
   const pending=buildGptPatches(options);
   for(const file of pending){
     const surface=file.path.match(/workbench\.(desktop|glass)\.main\.js$/)?.[1];
-    if(surface)file.content=patchSubagentDisplay(patchRemoteControlGuard(patchClaudeWorkbench(file.content,surface,symbols[surface],{once,prelude})));
+    if(surface)file.content=patchCompletedWork(patchSubagentDisplay(patchRemoteControlGuard(patchClaudeWorkbench(file.content,surface,symbols[surface],{once,prelude}))));
     if(/extensions[\\/](cursor-agent-exec|cursor-local-agent-runtime)[\\/]dist[\\/]main\.js$/.test(file.path))file.content=patchRuntime(file.content);
   }
   const product=pending.find(f=>f.path.endsWith('product.json'));

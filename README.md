@@ -42,6 +42,7 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 | Claude Fast | 当前明确关闭。保留普通订阅模式，界面不提供无法转发的开关 |
 | Agent Host | 两种订阅模型均进入本地执行路径；3.24.12 起按上游兼容补丁统一使用经典 agent 路径 |
 | 子任务卡片 | 使用子任务实际保存的推理、Fast 和上下文参数；参数未加载时只显示模型名称 |
+| 过程展示 | 完成后的 Worked for 默认折叠，保留最终结论和手动展开入口；适用于订阅模型与 Cursor 原生模型 |
 | 工具调用 | Claude 结构化输出转换为 Cursor 工具请求；执行结果进入后续请求 |
 | 使用量 | 两个订阅分别显示用量，不输出账号凭据 |
 | 恢复 | 一次切换恢复完整的官方应用和原自动更新设置 |
