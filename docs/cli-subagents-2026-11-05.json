@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-05",
+  "cliVersion": "2026.10.22-27dcf5f",
+  "model": "claude-subscription/claude-opus-5-5",
+  "effectiveClaudeModel": "claude-opus-5-5",
+  "effectiveEffort": "high",
+  "completedTasks": 2,
+  "subagentTypes": [
+    "generalPurpose",
+    "explore"
+  ],
+  "requestsByRole": {
+    "parent": 2,
+    "generalPurpose": 2,
+    "explore": 2
+  },
+  "nativeClaudeProcessInvocations": [
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    }
+  ],
+  "parentCompleted": true,
+  "parentSelectedParameters": [
+    {
+      "id": "reasoning",
+      "value": "high"
+    }
+  ],
+  "exploreSelection": "inherit",
+  "nativeResponsesReasoningField": "omitted; fixed CLI bridge profile explicitly supplies high",
+  "originalCliSourceUnchanged": true,
+  "originalCliSourceSha256": "2bf2d57356961a9690c5f1e8b4bfc48e1cae93c50a147230587c4879bcdee7f4",
+  "originalUserCliConfigUnchanged": true,
+  "childrenReadFixture": true,
+  "parentReceivedBothChildResults": true
+}

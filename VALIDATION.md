@@ -94,3 +94,15 @@ IDE 新建 This Mac / No Repo 对话，选择 Claude Opus 5.5 High，由 Cursor 
 交互终端启动检查显示 Cursor Agent (local-agent)、版本 2026.10.22-27dcf5f、模型 claude-subscription/opus 和独立验收工作区。该本地 CLI 组件的 `--list-models` 会访问 Cursor 后端并被 authless 模式拒绝，入口明确报告限制；普通模型推理和工具执行已通过。此次未验证交互模式的持续对话、CLI 子任务或长上下文填满，固定版本之外的 CLI 兼容性尚未验证。官方恢复沿用已有管理器，未重复执行实机双向切换。
 
 本机完整回归为 JavaScript 225 项通过、3 项平台跳过，Python 18 项通过。原始 3.24.12 desktop/glass 补丁生成、语法、Agent Host、子任务模型显示、过程折叠和 Fast/Reasoning/Context 检查均通过。
+
+## 2026-11-05 CLI 子任务固定 Opus 5.5 High
+
+基线实测创建一个普通子任务，父子共四次请求均使用 Opus，但 Responses 请求没有 reasoning 字段，无法保证 High。本地 CLI 恢复已保存模型时会清空参数，启动时也可能在目录发现完成前开始推理。现在保留模型参数并等待目录加载，按原始 CLI 源码 SHA-256 和两个唯一锚点生成独立补丁文件，原始 CLI 源码保持不变。
+
+CLI 固定配置使用精确模型 `claude-subscription/claude-opus-5-5`、reasoning=high，Explore 设为继承父任务；用户 CLI 原配置的内容与权限保持原样。CLI 的 Responses 传输仍可能漏传 reasoning，所以 `/cli/v1` 路由为父任务、子任务及辅助请求显式固定 Opus 5.5、High、200K 和普通订阅处理。IDE 原有模型与强度选择继续使用原路由。目录不再提供 Opus 5.5 High 时明确失败，不改用其他模型。
+
+代码提交 `aabc5a9` 已更新到本机 runtime，更新前保留完整运行文件备份，并核对 CLI 专用目录只返回 Opus 5.5 High。Cursor 应用保持 3.24.12，未替换 IDE 应用文件；当前安装来源记录为 `aabc5a9`，官方签名备份验证继续通过。
+
+最终实测通过仓库入口创建两个未指定模型或推理覆盖的子任务，分别为普通 generalPurpose 与 Explore。两个子任务各自使用 Shell 读取独立测试文件，均返回 `CHILD_FILE_PROOF_7183A`；父任务等待两者完成后返回 `PARENT_TWO_SUBAGENTS_OK` 和两个结果。父任务、普通子任务、Explore 各完成两次推理，总计六次。bridge 的有效参数和六个实际 Claude Code 进程的参数均为 `--model claude-opus-5-5 --effort high`，所有请求完成。
+
+验证同时确认原始 CLI 源码 SHA-256 与用户原 CLI 配置未变化。去除提示词、账号和凭据的证据见 [CLI 子任务验证数据](./docs/cli-subagents-2026-11-05.json)。完整回归为 JavaScript 227 项通过、3 项平台跳过，Python 20 项通过，两个真实 workbench 的补丁生成与既有功能检查通过。未进行嵌套子任务、长时间持续对话或填满上下文测试。
