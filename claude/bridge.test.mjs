@@ -100,16 +100,17 @@ test('CLI profile pins parent and subagent inference to exact Opus 5.5 High with
   const data=(await(await fetch(base+'/cli/v1/models',{headers})).json()).data;
   assert.deepEqual(data.map(m=>m.id),['claude-subscription/claude-opus-5-5']);
   assert.deepEqual(data[0].capabilities.reasoning_effort,['high']);
+  assert.equal(data[0].context_window,500000);assert.equal(data[0].capabilities.context_length,500000);
   for(const model of ['claude-subscription/opus','claude-subscription/sonnet']){
     const response=await fetch(base+'/cli/v1/responses',{method:'POST',headers,body:JSON.stringify({model,input:'test',reasoning:{effort:'low'},service_tier:'priority'})});
     assert.equal(parseEvents(await response.text()).at(-1).type,'response.completed');
   }
   for(const {body,catalog} of requests){
     assert.equal(body.model,'claude-subscription/claude-opus-5-5');assert.equal(body.reasoning.effort,'high');
-    assert.equal(body.claude_context,200000);assert.equal(body.service_tier,'default');
+    assert.equal(body.claude_context,500000);assert.equal(body.service_tier,'default');
     assert.equal(catalog[0].value,'claude-opus-5-5');assert.equal(catalog.length,1);
   }
-  assert.ok(records.every(r=>r.cliModel==='claude-opus-5-5'&&r.reasoningEffort==='high'));
+  assert.ok(records.every(r=>r.cliModel==='claude-opus-5-5'&&r.reasoningEffort==='high'&&r.contextTokens===500000));
   const native=(await(await fetch(base+'/v1/models',{headers})).json()).data;
   assert.deepEqual(native.map(m=>m.id),['claude-subscription/sonnet','claude-subscription/opus']);
 });

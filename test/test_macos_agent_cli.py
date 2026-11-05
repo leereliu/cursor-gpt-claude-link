@@ -27,7 +27,8 @@ class AgentCliTests(unittest.TestCase):
         cfg = pinned_config(original)
         self.assertEqual(cfg['approvalMode'], 'allowlist')
         self.assertEqual(cfg['permissions'], original['permissions'])
-        self.assertEqual(cfg['selectedModel'], {'modelId': DEFAULT_MODEL, 'parameters': [{'id': 'reasoning', 'value': 'high'}]})
+        self.assertEqual(cfg['selectedModel'], {'modelId': DEFAULT_MODEL, 'parameters': [
+            {'id': 'reasoning', 'value': 'high'}, {'id': 'context', 'value': '500000'}]})
         self.assertEqual(cfg['modelParameters'][DEFAULT_MODEL], cfg['selectedModel']['parameters'])
         self.assertEqual(cfg['subagentModels'], {'explore': 'inherit', 'other': 'keep'})
         self.assertEqual(cfg['exploreSubagentModel'], 'inherit')

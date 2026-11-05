@@ -66,7 +66,7 @@ def cli_arguments(args):
 
 
 def pinned_config(original):
-    parameters = [{'id': 'reasoning', 'value': 'high'}]
+    parameters = [{'id': 'reasoning', 'value': 'high'}, {'id': 'context', 'value': '500000'}]
     return {**original, 'model': {'modelId': DEFAULT_MODEL, 'displayModelId': DEFAULT_MODEL,
             'displayName': 'Claude Opus 5.5', 'displayNameShort': 'Opus 5.5', 'aliases': []},
             'selectedModel': {'modelId': DEFAULT_MODEL, 'parameters': parameters},

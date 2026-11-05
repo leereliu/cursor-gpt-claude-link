@@ -32,8 +32,8 @@ return async function handle(req,res) {
     };
     if (pathname==='/health') return json(res,200,{ok:true,provider:'claude-subscription',active});
     if (pathname==='/picker-models') return json(res,200,{models:pickerModels(await catalogForRequest())});
-    if (pathname==='/v1/models') return json(res,200,{object:'list',data:providerModels(await catalogForRequest()).map(m=>cli?{...m,capabilities:{...m.capabilities,
-      reasoning_effort:['high'],supports_tool_use:true,supports_streaming:true,output_modalities:['text']}}:m)});
+    if (pathname==='/v1/models') return json(res,200,{object:'list',data:providerModels(await catalogForRequest()).map(m=>cli?{...m,context_window:500000,capabilities:{...m.capabilities,
+      context_length:500000,reasoning_effort:['high'],supports_tool_use:true,supports_streaming:true,output_modalities:['text']}}:m)});
     if (pathname==='/account') return json(res,200,await readAccount(config.claude,{cwd:dir}));
     if (req.method==='GET'&&(pathname==='/usage'||pathname==='/v1/usage')) {
       try { return json(res,200,await getUsage()); }
@@ -44,7 +44,7 @@ return async function handle(req,res) {
     req.setEncoding('utf8');let text='';for await (const chunk of req) {text+=chunk;if(Buffer.byteLength(text)>64*1024*1024)throw new Error('Request exceeds the 64 MiB bridge limit. Send fewer or smaller attachments.');}
     const body=JSON.parse(text),catalog=await catalogForRequest();
     // The CLI profile also pins subagent and auxiliary inference requests.
-    if(cli)Object.assign(body,{model:'claude-subscription/claude-opus-5-5',reasoning:{effort:'high'},claude_context:200000,service_tier:'default'});
+    if(cli)Object.assign(body,{model:'claude-subscription/claude-opus-5-5',reasoning:{effort:'high'},claude_context:500000,service_tier:'default'});
     const prepared=prepareRequest(body,catalog);
     const abort=new AbortController();res.on('close',()=>{if(!res.writableEnded)abort.abort();});
     const response={id:id('resp'),object:'response',created_at:Math.floor(Date.now()/1000),model:body.model,status:'in_progress',output:[]};
@@ -55,7 +55,7 @@ return async function handle(req,res) {
     const timer=setInterval(()=>{if(!res.destroyed)res.write(': waiting for Claude Code\n\n');},10000);
     active++;
     const started=Date.now();
-    const record=(status,usage)=>{try{report({id:response.id,model:body.model,cliModel:prepared.model,reasoningEffort:prepared.effort,status,durationMs:Date.now()-started,at:new Date().toISOString(),...(usage?{usage}: {})});}catch{}};
+    const record=(status,usage)=>{try{report({id:response.id,model:body.model,cliModel:prepared.model,reasoningEffort:prepared.effort,contextTokens:prepared.contextTokens,status,durationMs:Date.now()-started,at:new Date().toISOString(),...(usage?{usage}: {})});}catch{}};
     record('started');
     try {
       const {answer,usage,usageDiagnostics}=await inferRequest(config.claude,body,{signal:abort.signal,cwd:dir,catalog});

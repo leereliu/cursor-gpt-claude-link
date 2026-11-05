@@ -112,6 +112,15 @@ test('context selection reaches CLI model and isolates per-request environment',
  assert.deepEqual(contextEnvironment(200000,inherited),{PATH:'test',CLAUDE_CODE_DISABLE_1M_CONTEXT:'1'});
  assert.equal(inherited.DISABLE_COMPACT,'1');
 });
+test('Opus 5.5 supports the fixed 500K CLI budget without changing its model ID',()=>{
+ const opus=sanitizeModels([{value:'claude-opus-5-5',resolvedModel:'claude-opus-5-5',displayName:'Opus 5.5',supportsEffort:true,supportedEffortLevels:['high']}]);
+ const request=prepare({model:'claude-subscription/claude-opus-5-5',input:[],claude_context:500000,reasoning:{effort:'high'}},opus);
+ assert.equal(request.contextTokens,500000);assert.equal(request.model,'claude-opus-5-5');assert.equal(request.effort,'high');
+ const inherited={PATH:'test',CLAUDE_CODE_DISABLE_1M_CONTEXT:'1',CLAUDE_CODE_AUTO_COMPACT_WINDOW:'180000',CLAUDE_CODE_MAX_CONTEXT_TOKENS:'200000',DISABLE_COMPACT:'1'};
+ assert.deepEqual(contextEnvironment(500000,inherited),{PATH:'test'});
+ assert.equal(inherited.CLAUDE_CODE_DISABLE_1M_CONTEXT,'1');
+ assert.throws(()=>prepare({model:'claude-subscription/sonnet',input:[],claude_context:500000},catalog),/Unsupported context/);
+});
 test('usage parser maps Claude windows and reset times without leaking extra text',()=>{
   const now=new Date('2026-09-10T18:00:00Z');
   const windows=parseUsageWindows('You are currently using your subscription to power your Claude Code usage\n\nCurrent session: 12% used · resets Sep 11, 1:09am (Europe/Berlin)\nCurrent week (all models): 40% used · resets Sep 16, 8:59am (Europe/Berlin)\nCurrent week (Fable): 0% used · resets Sep 16, 8:59am (Europe/Berlin)\n\nLast 7d · 53 requests · 2 sessions\n  Top MCP servers: lexware-office 9%', now);
