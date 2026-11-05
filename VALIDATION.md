@@ -106,3 +106,13 @@ CLI 固定配置使用精确模型 `claude-subscription/claude-opus-5-5`、reaso
 最终实测通过仓库入口创建两个未指定模型或推理覆盖的子任务，分别为普通 generalPurpose 与 Explore。两个子任务各自使用 Shell 读取独立测试文件，均返回 `CHILD_FILE_PROOF_7183A`；父任务等待两者完成后返回 `PARENT_TWO_SUBAGENTS_OK` 和两个结果。父任务、普通子任务、Explore 各完成两次推理，总计六次。bridge 的有效参数和六个实际 Claude Code 进程的参数均为 `--model claude-opus-5-5 --effort high`，所有请求完成。
 
 验证同时确认原始 CLI 源码 SHA-256 与用户原 CLI 配置未变化。去除提示词、账号和凭据的证据见 [CLI 子任务验证数据](./docs/cli-subagents-2026-11-05.json)。完整回归为 JavaScript 227 项通过、3 项平台跳过，Python 20 项通过，两个真实 workbench 的补丁生成与既有功能检查通过。未进行嵌套子任务、长时间持续对话或填满上下文测试。
+
+## 2026-11-05 CLI 默认 500K，模型验收等待额度恢复
+
+按用户要求，CLI 父任务和全部子任务继续固定 Opus 5.5 High，默认窗口预算从 200K 改为 500,000 tokens。代码提交 `7d4e1cd` 已在本地保存，并更新本机 runtime；更新前的运行文件备份保留在状态目录的 `backups/cli-500k-*` 下，Cursor IDE 版本和应用文件保持不变。
+
+CLI 专用模型目录的 `context_window` 与 `capabilities.context_length` 均为 500,000，独立配置保存 context=500000，bridge 为父子请求统一设置 claude_context=500000。Claude Code 子进程继续使用 `--model claude-opus-5-5 --effort high`，新增 `--autocompact 500000` 并移除强制 200K 的环境限制。该配置采用 Opus 5.5 原生大窗口内的 500K 预算，配置依据见 [Claude Code 官方上下文设置](https://code.claude.com/docs/en/model-config#set-the-auto-compact-window)。
+
+无需模型生成的实际 `/context` 查询已显示 `Model: claude-opus-5-5`、`Tokens: 2.3k / 500k`。完整回归为 JavaScript 228 项通过、3 项平台跳过，Python 20 项通过，两个真实 workbench 的补丁生成及原有功能检查通过。
+
+父子任务模型验收遇到 Claude 5 小时订阅额度耗尽，未取得成功的子任务结果。用户确认额度耗尽后，已结束该测试进程，bridge active=0，没有留下后台模型重试或定时任务。本轮只确认了配置、参数传递和窗口显示，尚未完成 500K 配置下的父子模型成功调用，也未填满 500K。当前改动仅保存在本地，未 push；后续由用户在本聊天中指示继续验收，通过后再推送。
