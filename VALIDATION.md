@@ -78,3 +78,19 @@ Astra 参数菜单显示 Codex default · 272K 和 500K；实际完成两档切�
 本机 JavaScript 共 223 项通过、3 项平台跳过，Python 13 项通过。两个真实 workbench 的生成检查均通过，覆盖原始展开行为复现、完成后折叠、活动过程、最终回复与既有 project 分组；GPT Fast/Reasoning/Context、Claude Effort/Context、Agent Host 和子任务显示回归通过。[macOS fork regressions](https://github.com/leereliu/cursor-gpt-claude-link/actions/runs/39452076151) 与 [Tests](https://github.com/leereliu/cursor-gpt-claude-link/actions/runs/39452076115) 均通过。
 
 安装来源记录为 `2df3c1bd0f82ae8da215ce1aff87ea448b410807`，当前为 patched，管理器验证官方备份通过，独立 switch-version.py 官方恢复入口保留。本次没有重复切换官方版，实机双向恢复验证沿用本文件同日的子任务显示修复记录；未重新运行 Fast 速度基准或大上下文填满测试。
+
+## 2026-11-05 Claude 用量错误与 CLI 订阅路由
+
+本机 IDE 保持 Cursor 3.24.12，Claude Code 为 2.1.300。最初 `/usage` 返回 502，实际错误为 Claude 订阅未登录，终端与 bridge 的 `auth status` 都显示 `loggedIn: false`。用户完成订阅登录后，账号状态为 claude.ai / Pro，模型目录将 opus 解析为 `claude-opus-5-5`；同一 bridge 的 `/usage` 恢复 200，返回 Pro、5 小时与周用量。IDE 的 Plan & Usage 实际显示对应数据。
+
+代码提交 `9f8e664` 保留用量接口返回的具体错误，避免将登录原因隐藏为通用 HTTP 502。覆盖登录失败、非 JSON 错误、成功用量和无效成功响应。已使用原有恢复管理器重新安装同版本补丁，安装来源为 `9f8e66412421a9066577db6666484eb851508c13`，官方备份验证通过。
+
+IDE 新建 This Mac / No Repo 对话，选择 Claude Opus 5.5 High，由 Cursor Shell 写入并读取临时文件，最终回复及实际文件内容均为 `IDE_SUBSCRIPTION_OPUS55_OK`。
+
+标准 cursor-agent 2026.10.22-27dcf5f 会拒绝 `claude-subscription/opus`。本次采用同版本 Cursor 官方 agent-cli-local 组件，保留 Cursor 的 CLI harness，通过原有 Responses bridge 使用 Claude 订阅；没有重写工具执行循环。组件来源、SHA-256 和固定路径记录在 README。直接 CLI 实测完成 Shell 写入与读取，文件和回复均为 `CLI_SUBSCRIPTION_OPUS55_OK`；仓库 `./cursor-agent` 入口再次实测读取 IDE 测试文件，回复 `WRAPPER_OPUS55_TOOL_OK`，结果均为 success。三次验收在 bridge 留下六个完成请求，模型均为 `claude-subscription/opus`，没有失败请求。
+
+入口固定 loopback 路由并通过环境变量传递密钥，阻止外部推理路由及 Bedrock 覆盖；Claude Fast 保持关闭。独立临时状态目录中的真实启动测试确认：无需 IDE 启动，入口能启动已安装的双 bridge 并运行 CLI 版本查询，测试后清理该独立 worker。
+
+交互终端启动检查显示 Cursor Agent (local-agent)、版本 2026.10.22-27dcf5f、模型 claude-subscription/opus 和独立验收工作区。该本地 CLI 组件的 `--list-models` 会访问 Cursor 后端并被 authless 模式拒绝，入口明确报告限制；普通模型推理和工具执行已通过。此次未验证交互模式的持续对话、CLI 子任务或长上下文填满，固定版本之外的 CLI 兼容性尚未验证。官方恢复沿用已有管理器，未重复执行实机双向切换。
+
+本机完整回归为 JavaScript 225 项通过、3 项平台跳过，Python 18 项通过。原始 3.24.12 desktop/glass 补丁生成、语法、Agent Host、子任务模型显示、过程折叠和 Fast/Reasoning/Context 检查均通过。

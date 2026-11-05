@@ -51,6 +51,19 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 
 本次验证范围为本机 Cursor。Remote Control 的云端创建接口无法访问本地订阅 bridge，会保留草稿并提示使用 This Mac。SSH 与远端运行扩展保留来源代码，尚未纳入组合安装的实机验收。
 
+## Cursor CLI 使用 Claude 订阅
+
+```sh
+./cursor-agent
+./cursor-agent --print --workspace /path/to/project "检查这个项目"
+```
+
+此入口使用 Cursor 官方本地推理 CLI 的 harness，默认模型为 `claude-subscription/opus`，当前 Claude Code 目录解析为 Opus 5.5。工具执行、权限、会话和 CLI 界面由 Cursor 管理；模型请求进入同一个本机 Claude 订阅 bridge，Claude Code 只承担推理。Claude Fast 继续关闭。入口会在 IDE 关闭时启动已安装的 bridge，密钥经环境变量传入，推理路由固定为 loopback。
+
+本机已安装的独立依赖为 Cursor 官方 `agent-cli-local` 版本 `2026.10.22-27dcf5f`，路径为 `~/.local/share/cursor-agent-local/versions/2026.10.22-27dcf5f/cursor-agent-local`。组件来自 [Cursor 官方下载](https://downloads.cursor.com/lab/2026.10.22-27dcf5f/darwin/arm64/agent-cli-local-package.tar.gz)，归档 SHA-256 为 `9e5d0428455dd5aa440743ea8a48cc0f11b0dc57f1d05cf011f8ae2ef7a15097`，解压时去除首层目录。仓库不包含该组件。标准 `cursor-agent` 安装继续保留；本仓库入口使用 `./cursor-agent`。
+
+这个本地推理组件使用尚未公开稳定的 CLI 接口，因此固定已验证版本。`--list-models` 在该版本会访问 Cursor 后端并被 authless 模式拒绝；本仓库入口明确报告该限制。跨版本更新需要重新验证。
+
 ## 验证
 
 ```sh
@@ -71,4 +84,4 @@ node scripts/verify-build.mjs /path/to/official/Cursor.app/Contents/Resources/ap
 
 同步要求干净的 `main` 且与 `origin/main` 一致，自动配置缺少的来源 remote，创建备份引用，整合 GPT 基线和 Claude subtree，运行全部回归，再使用精确远端 SHA 的 lease 推送。冲突或测试失败时恢复原分支；远端并发更新时保留本地已验证结果。
 
-原 GPT fork 继续 rebase vertexitde 上游，组合仓库合并两个来源的更新以保留 subtree 历史。每周任务只维护仓库；实际更新 Cursor 通过 `./cursor-link install` 完成。
+原 GPT fork 继续 rebase vertexitde 上游，组合仓库合并两个来源的更新以保留 subtree 历史。同步按用户在本聊天中的指示执行；实际更新 Cursor 补丁通过 `./cursor-link install` 完成。
