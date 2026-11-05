@@ -134,3 +134,15 @@ CLI 专用模型目录的 `context_window` 与 `capabilities.context_length` 均
 本轮 9 项相关回归通过，模拟时钟确认 3 分钟、10 分钟以及 1,799,999 毫秒仍待完成，达到 1,800,000 毫秒时超时，显式较短超时继续有效。没有模型调用、填满上下文或实际等待三十分钟的测试。
 
 代码提交 `172625c` 已更新本机 runtime，更新前确认 Claude active=0、GPT bridge 没有已建立连接；旧运行文件备份保留在 `backups/cli-30min-20261105T091925Z`。CLI 专用目录仍为 Opus 5.5 High、500K，Cursor 保持 3.24.12，应用补丁哈希校验通过。此前额度不足时的父任务最终回复验收仍未完成，所有待推送提交继续保留在本地。
+
+## 2026-11-05 最终验收通过
+
+本节为最新结果，此前因额度耗尽而未完成的父任务最终回复已补齐。本轮在线验收仅调用模型四次：CLI 三次、IDE 一次，均成功，没有自动重试或失败。
+
+仓库 `./cursor-agent` 入口使用 Cursor 官方本地 CLI harness，创建一个 Explore 子任务后等待其完成。子任务返回 `CHILD_500K_OK`，父任务最终回复包含 `PARENT_500K_OK CHILD_500K_OK`，CLI 退出码为 0。父任务和子任务的三轮实际参数均为精确模型 `claude-opus-5-5`、High、500,000；观察到的 Claude Code 进程均携带 `--effort high --autocompact 500000`。模型目录两处窗口元数据均为 500,000，独立配置包含相同 context 和 reasoning，Explore 设为继承。原始 CLI 源码 SHA-256 和用户原 CLI 配置保持不变。
+
+本机 Cursor 新建 This Mac 对话，选择 Claude Opus 5.5 High，仅要求返回固定标记，界面显示 `IDE_CLAUDE_OK` 与 Completed。对应 bridge 请求完成，使用 High；IDE 沿用独立的默认 200K 目录设置，CLI 的 500K 固定策略没有覆盖 IDE 选择。Claude Fast 继续关闭。
+
+当前 30 分钟总超时通过模拟时钟验证，本机 runtime 与仓库 runner 文件逐字节一致。完整回归 JavaScript 229 项通过、3 项平台跳过，Python 20 项通过；真实 Cursor 3.24.12 的 desktop/glass 补丁生成、语法、Fast/Reasoning/Context、Agent Host、子任务继承和过程折叠检查通过。Cursor IDE 版本与应用文件保持不变，管理器确认 patched 状态及官方签名恢复备份有效，bridge active=0。
+
+本轮没有构造大文本、填满 500K、运行真实三十分钟推理、重测 GPT 速度或启用额外计费。请求上下文大小不等于计费 token，本轮未测量计费 token 总数。脱敏原始字段见 [最终验收数据](./docs/cli-500k-acceptance-2026-11-05.json)。

@@ -1,0 +1,116 @@
+{
+  "date": "2026-11-05",
+  "outcome": "passed",
+  "codeRevision": "172625c0f735d7cbbb5a6480efd48b9dc68d4ef1",
+  "ideVersion": "3.24.12",
+  "inferenceTimeoutMs": 1800000,
+  "timeoutVerification": "Fake clock remains pending at 3 minutes, 10 minutes and 1799999 ms; expires at 1800000 ms. Shorter explicit deadlines and cancellation still pass.",
+  "modelCallsThisAcceptance": {
+    "cli": 3,
+    "ide": 1,
+    "failed": 0,
+    "automaticRetries": 0
+  },
+  "cli": {
+    "harness": "Cursor official agent-cli-local 2026.10.22-27dcf5f",
+    "exitCode": 0,
+    "parentFinalReply": "Launching the Explore subagent now.PARENT_500K_OK CHILD_500K_OK",
+    "childType": "explore",
+    "childReply": "CHILD_500K_OK",
+    "contextWindow": 500000,
+    "capabilitiesContextLength": 500000,
+    "profile": {
+      "selectedModel": {
+        "modelId": "claude-subscription/claude-opus-5-5",
+        "parameters": [
+          {
+            "id": "reasoning",
+            "value": "high"
+          },
+          {
+            "id": "context",
+            "value": "500000"
+          }
+        ]
+      },
+      "exploreSubagentModel": "inherit",
+      "subagentModels": {
+        "explore": "inherit"
+      }
+    },
+    "actualClaudeArgumentSets": [
+      {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "autocompact": "500000"
+      }
+    ],
+    "requests": [
+      {
+        "model": "claude-subscription/claude-opus-5-5",
+        "cliModel": "claude-opus-5-5",
+        "reasoningEffort": "high",
+        "contextTokens": 500000,
+        "status": "completed",
+        "durationMs": 5021,
+        "role": "parent"
+      },
+      {
+        "model": "claude-subscription/claude-opus-5-5",
+        "cliModel": "claude-opus-5-5",
+        "reasoningEffort": "high",
+        "contextTokens": 500000,
+        "status": "completed",
+        "durationMs": 4358,
+        "role": "child"
+      },
+      {
+        "model": "claude-subscription/claude-opus-5-5",
+        "cliModel": "claude-opus-5-5",
+        "reasoningEffort": "high",
+        "contextTokens": 500000,
+        "status": "completed",
+        "durationMs": 3757,
+        "role": "parent"
+      }
+    ],
+    "originalUserCliConfigUnchanged": true,
+    "originalCliSourceSha256": "2bf2d57356961a9690c5f1e8b4bfc48e1cae93c50a147230587c4879bcdee7f4"
+  },
+  "ide": {
+    "uiModelLabel": "Claude Opus 5.5 High",
+    "uiReply": "IDE_CLAUDE_OK",
+    "uiState": "Completed",
+    "bridge": {
+      "model": "claude-subscription/opus",
+      "cliModel": "opus",
+      "reasoningEffort": "high",
+      "contextTokens": 200000,
+      "status": "completed",
+      "durationMs": 3762
+    }
+  },
+  "regressions": {
+    "javascriptPassed": 229,
+    "javascriptSkipped": 3,
+    "pythonPassed": 20,
+    "realDesktopAndGlassBuildChecksPassed": true
+  },
+  "preserved": [
+    "GPT Fast priority and routing headers",
+    "GPT model-default and permitted 500K contexts",
+    "CLI Opus 5.5 High 500K parent/subagent policy",
+    "Extra High labels",
+    "completed-process collapse",
+    "signed official recovery backup"
+  ],
+  "tokenBudget": {
+    "largeInputConstructed": false,
+    "contextFillTestRun": false,
+    "realThirtyMinuteInferenceRun": false,
+    "gptSpeedBenchmarkRepeated": false,
+    "billingTokenCount": "Not measured; request context sizes are not billing totals."
+  },
+  "bridgeActiveAfter": 0,
+  "ideUpdated": false
+}
