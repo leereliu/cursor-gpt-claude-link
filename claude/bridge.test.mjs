@@ -79,6 +79,19 @@ test('stalled model discovery remains bounded',async()=>{
 test('logged-out CLI status provides the subscription login command',async()=>{
   await assert.rejects(runCli(process.execPath,['-e','console.log(JSON.stringify({loggedIn:false,authMethod:"none"}));process.exitCode=1;']),/claude auth login --claudeai/);
 });
+test('Claude calls have a ten-minute total deadline and retain explicit shorter deadlines',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const args=['-e','setInterval(()=>{},1000)'];
+  const pending=runCli(process.execPath,args);let settled=false;
+  pending.then(()=>{settled=true;},()=>{settled=true;});
+  t.mock.timers.tick(180000);await Promise.resolve();assert.equal(settled,false);
+  t.mock.timers.tick(419999);await Promise.resolve();assert.equal(settled,false);
+  const expired=assert.rejects(pending,/Claude request timed out/);
+  t.mock.timers.tick(1);await expired;
+  const short=runCli(process.execPath,args,{timeout:10});
+  const shortExpired=assert.rejects(short,/Claude request timed out/);
+  t.mock.timers.tick(10);await shortExpired;
+});
 test('live picker-models advertises MAX for extended models',async t=>{
   const catalog=sanitizeModels([{value:'opus',displayName:'Opus',resolvedModel:'claude-opus-5[1m]',description:'Opus 5 with 1M context'}]);
   const server=http.createServer(createHandler({config,getCatalog:async()=>catalog,inferRequest:async()=>({answer:{text:'',tool_calls:[]}})}));
