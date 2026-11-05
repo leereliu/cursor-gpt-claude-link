@@ -66,7 +66,7 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 
 这个本地推理组件使用尚未公开稳定的 CLI 接口，因此固定已验证版本。`--list-models` 在该版本会访问 Cursor 后端并被 authless 模式拒绝；本仓库入口明确报告该限制。跨版本更新需要重新验证。
 
-Claude 适配层每轮模型调用的总超时为 **10 分钟**，包含思考与输出，期间不会重置计时。该限制同时作用于 IDE 和 CLI；登录、模型目录和用量查询继续使用各自较短的超时。
+Claude 适配层每轮模型调用的总超时为 **30 分钟**，包含思考与输出，期间不会重置计时。该限制同时作用于 IDE 和 CLI；登录、模型目录和用量查询继续使用各自较短的超时。
 
 ## 验证
 
