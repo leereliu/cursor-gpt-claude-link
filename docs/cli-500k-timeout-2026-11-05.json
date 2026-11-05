@@ -1,0 +1,141 @@
+{
+  "date": "2026-11-05",
+  "codeRevision": "e7067d1ab6cec8bd3fb90e0bc0db7b14c7066859",
+  "ideVersion": "3.24.12",
+  "inferenceTimeoutMs": 600000,
+  "timeoutVerification": "Fake timer: still pending at 180000 and 599999 ms; rejects at 600000 ms; explicit shorter deadline preserved.",
+  "cliModel": "claude-subscription/claude-opus-5-5",
+  "contextWindow": 500000,
+  "profile": {
+    "selectedModel": {
+      "modelId": "claude-subscription/claude-opus-5-5",
+      "parameters": [
+        {
+          "id": "reasoning",
+          "value": "high"
+        },
+        {
+          "id": "context",
+          "value": "500000"
+        }
+      ]
+    },
+    "exploreSubagentModel": "inherit",
+    "subagentModels": {
+      "explore": "inherit"
+    }
+  },
+  "test": {
+    "subagentType": "explore",
+    "childReply": "CHILD_500K_OK",
+    "childCompleted": true,
+    "parentFinalReplyCompleted": false,
+    "cliExitCode": 143,
+    "completedModelCalls": 2,
+    "failedFinalReplyAttempts": 4,
+    "subscriptionSessionUsedPercentBefore": 98,
+    "subscriptionSessionUsedPercentAfter": 100,
+    "subscriptionReset": "2026-11-05 21:40 Asia/Singapore",
+    "testProcessStopped": true,
+    "bridgeActiveAfter": 0,
+    "outcome": "Partial: parent initial inference and child succeeded. Final parent reply was not obtained after subscription usage reached 100%; retries were stopped.",
+    "largeInputConstructed": false,
+    "contextFillTestRun": false
+  },
+  "actualClaudeArguments": [
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "autocompact": "500000"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "autocompact": "500000"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "autocompact": "500000"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "autocompact": "500000"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "autocompact": "500000"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "autocompact": "500000"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "autocompact": "500000"
+    }
+  ],
+  "bridgeRequests": [
+    {
+      "model": "claude-subscription/claude-opus-5-5",
+      "cliModel": "claude-opus-5-5",
+      "reasoningEffort": "high",
+      "contextTokens": 500000,
+      "status": "completed",
+      "durationMs": 4874
+    },
+    {
+      "model": "claude-subscription/claude-opus-5-5",
+      "cliModel": "claude-opus-5-5",
+      "reasoningEffort": "high",
+      "contextTokens": 500000,
+      "status": "completed",
+      "durationMs": 3782
+    },
+    {
+      "model": "claude-subscription/claude-opus-5-5",
+      "cliModel": "claude-opus-5-5",
+      "reasoningEffort": "high",
+      "contextTokens": 500000,
+      "status": "failed",
+      "durationMs": 3223
+    },
+    {
+      "model": "claude-subscription/claude-opus-5-5",
+      "cliModel": "claude-opus-5-5",
+      "reasoningEffort": "high",
+      "contextTokens": 500000,
+      "status": "failed",
+      "durationMs": 3779
+    },
+    {
+      "model": "claude-subscription/claude-opus-5-5",
+      "cliModel": "claude-opus-5-5",
+      "reasoningEffort": "high",
+      "contextTokens": 500000,
+      "status": "failed",
+      "durationMs": 3758
+    },
+    {
+      "model": "claude-subscription/claude-opus-5-5",
+      "cliModel": "claude-opus-5-5",
+      "reasoningEffort": "high",
+      "contextTokens": 500000,
+      "status": "failed",
+      "durationMs": 3424
+    }
+  ],
+  "originalCliSourceSha256": "2bf2d57356961a9690c5f1e8b4bfc48e1cae93c50a147230587c4879bcdee7f4",
+  "originalUserCliConfigUnchanged": true,
+  "regressions": {
+    "javascriptPassed": 229,
+    "javascriptSkipped": 3,
+    "pythonPassed": 20,
+    "realBuildChecksPassed": true
+  },
+  "pushStatus": "Not pushed; awaiting full live acceptance after subscription quota recovery."
+}
