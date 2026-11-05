@@ -58,7 +58,9 @@ python3 "$HOME/Library/Application Support/cursor-gpt-link/switch-version.py" of
 ./cursor-agent --print --workspace /path/to/project "检查这个项目"
 ```
 
-此入口使用 Cursor 官方本地推理 CLI 的 harness，默认模型为 `claude-subscription/opus`，当前 Claude Code 目录解析为 Opus 5.5。工具执行、权限、会话和 CLI 界面由 Cursor 管理；模型请求进入同一个本机 Claude 订阅 bridge，Claude Code 只承担推理。Claude Fast 继续关闭。入口会在 IDE 关闭时启动已安装的 bridge，密钥经环境变量传入，推理路由固定为 loopback。
+此入口使用 Cursor 官方本地推理 CLI 的 harness，固定为 Claude 订阅 **Opus 5.5 High**，父任务和所有子任务相同。工具执行、权限、会话和 CLI 界面由 Cursor 管理；模型请求进入同一个本机 Claude 订阅 bridge，Claude Code 只承担推理。CLI 的 `/cli/v1` 路由只公布精确模型 `claude-subscription/claude-opus-5-5`，并为每次请求显式设置 High，避免本地 CLI 漏传推理参数时回落到默认值。Claude Fast 继续关闭。入口会在 IDE 关闭时启动已安装的 bridge，密钥经环境变量传入，推理路由固定为 loopback；`--model` 和推理路由覆盖会被拒绝。
+
+启动时从用户 CLI 配置生成独立的 `~/Library/Application Support/cursor-gpt-link/cli-opus55-high/cli-config.json`，保留权限等设置，固定模型和 High，并将 Explore 设为继承父任务。用户原配置保持原样。本地 CLI 的目录加载时序和保存参数恢复通过两处经过 SHA-256 及唯一锚点检查的补丁修复，生成同目录的 `index.opus55-high.js`，原始 `index.js` 保留。
 
 本机已安装的独立依赖为 Cursor 官方 `agent-cli-local` 版本 `2026.10.22-27dcf5f`，路径为 `~/.local/share/cursor-agent-local/versions/2026.10.22-27dcf5f/cursor-agent-local`。组件来自 [Cursor 官方下载](https://downloads.cursor.com/lab/2026.10.22-27dcf5f/darwin/arm64/agent-cli-local-package.tar.gz)，归档 SHA-256 为 `9e5d0428455dd5aa440743ea8a48cc0f11b0dc57f1d05cf011f8ae2ef7a15097`，解压时去除首层目录。仓库不包含该组件。标准 `cursor-agent` 安装继续保留；本仓库入口使用 `./cursor-agent`。
 

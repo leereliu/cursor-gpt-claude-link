@@ -11,9 +11,9 @@ const config={key:'synthetic-test-key',claude:'unused'};
 const headers={Authorization:'Bearer '+config.key,'Content-Type':'application/json'};
 const catalog=sanitizeModels([{value:'sonnet',displayName:'Sonnet'}]);
 export const parseEvents=text=>text.split('\n').filter(line=>line.startsWith('data: ')).map(line=>JSON.parse(line.slice(6)));
-async function fixture(t,inferRequest){
+async function fixture(t,inferRequest,models=catalog){
   const records=[];
-  const server=http.createServer(createHandler({config,getCatalog:async()=>catalog,inferRequest,report:record=>records.push(record)}));
+  const server=http.createServer(createHandler({config,getCatalog:async()=>models,inferRequest,report:record=>records.push(record)}));
   server.listen(0,'127.0.0.1');await once(server,'listening');
   t.after(()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve);}));
   const base='http://127.0.0.1:'+server.address().port;
@@ -89,4 +89,34 @@ test('live picker-models advertises MAX for extended models',async t=>{
   assert.equal(listed.supportsMaxMode,true);
   assert.equal(listed.contextTokenLimit,200000);
   assert.equal(listed.contextTokenLimitForMaxMode,1000000);
+});
+
+test('CLI profile pins parent and subagent inference to exact Opus 5.5 High without changing IDE models',async t=>{
+  const opus={value:'opus',displayName:'Opus 5.5',resolvedModel:'claude-opus-5-5',supportedEffortLevels:['low','high']};
+  const requests=[];
+  const {base,records}=await fixture(t,async(_cli,body,{catalog})=>{
+    requests.push({body,catalog});return{answer:{text:'ok',tool_calls:[]},usage:{input_tokens:3,output_tokens:1}};
+  },[...catalog,opus]);
+  const data=(await(await fetch(base+'/cli/v1/models',{headers})).json()).data;
+  assert.deepEqual(data.map(m=>m.id),['claude-subscription/claude-opus-5-5']);
+  assert.deepEqual(data[0].capabilities.reasoning_effort,['high']);
+  for(const model of ['claude-subscription/opus','claude-subscription/sonnet']){
+    const response=await fetch(base+'/cli/v1/responses',{method:'POST',headers,body:JSON.stringify({model,input:'test',reasoning:{effort:'low'},service_tier:'priority'})});
+    assert.equal(parseEvents(await response.text()).at(-1).type,'response.completed');
+  }
+  for(const {body,catalog} of requests){
+    assert.equal(body.model,'claude-subscription/claude-opus-5-5');assert.equal(body.reasoning.effort,'high');
+    assert.equal(body.claude_context,200000);assert.equal(body.service_tier,'default');
+    assert.equal(catalog[0].value,'claude-opus-5-5');assert.equal(catalog.length,1);
+  }
+  assert.ok(records.every(r=>r.cliModel==='claude-opus-5-5'&&r.reasoningEffort==='high'));
+  const native=(await(await fetch(base+'/v1/models',{headers})).json()).data;
+  assert.deepEqual(native.map(m=>m.id),['claude-subscription/sonnet','claude-subscription/opus']);
+});
+
+test('CLI profile refuses an unavailable or changed Opus alias instead of selecting another model',async t=>{
+  const {base}=await fixture(t,async()=>assert.fail('No inference should run'));
+  const response=await fetch(base+'/cli/v1/models',{headers});
+  assert.equal(response.status,400);assert.match((await response.json()).error.message,/Opus 5.5 High is unavailable/);
+  assert.equal((await fetch(base+'/cli/v1/models')).status,401);
 });

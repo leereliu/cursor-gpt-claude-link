@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Run Cursor's local CLI harness against the installed Claude subscription bridge."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -12,18 +14,82 @@ import urllib.request
 from macos import STATE, node_binary, read
 
 CLI_VERSION = '2026.10.22-27dcf5f'
-DEFAULT_MODEL = 'claude-subscription/opus'
+DEFAULT_MODEL = 'claude-subscription/claude-opus-5-5'
+CLI_SOURCE_SHA256 = '2bf2d57356961a9690c5f1e8b4bfc48e1cae93c50a147230587c4879bcdee7f4'
+
+
+def patch_cli_source(source):
+    # Local CLI drops saved parameters and can infer before catalog discovery.
+    replacements = [
+        ('async awaitCurrentModelWithStartupCache(){return this.currentModel}async awaitCurrentModel(){return this.currentModel}',
+         'async awaitCurrentModelWithStartupCache(){await this.modelFetchPromise;return this.currentModel}async awaitCurrentModel(){await this.modelFetchPromise;return this.currentModel}'),
+        ('async setModelFromStoredId(e,t){return!!e?.trim()&&(await this.setCurrentModelWithParameters(e.trim(),[],t),!0)}',
+         'async setModelFromStoredId(e,t){return!!e?.trim()&&(await this.setCurrentModelWithParameters(e.trim(),this.getParametersForModel(e.trim(),t),t),!0)}')
+    ]
+    for before, after in replacements:
+        if source.count(before) != 1:
+            raise ValueError('Cursor local CLI 补丁锚点不唯一，操作取消。')
+        source = source.replace(before, after)
+    return source
+
+
+def patched_cli(cli):
+    original = cli.parent / 'index.js'
+    source = original.read_bytes()
+    if hashlib.sha256(source).hexdigest() != CLI_SOURCE_SHA256:
+        raise ValueError('Cursor local CLI 指纹不匹配，操作取消。')
+    patched = patch_cli_source(source.decode())
+    target = cli.parent / 'index.opus55-high.js'
+    if not target.exists() or target.read_text() != patched:
+        fd, temporary = tempfile.mkstemp(dir=cli.parent, prefix='index.opus55-high-', suffix='.js')
+        try:
+            with os.fdopen(fd, 'w') as stream:
+                stream.write(patched)
+            subprocess.run([str(cli.parent / 'node'), '--check', temporary], check=True, capture_output=True)
+            os.replace(temporary, target)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+    return target
 
 
 def cli_arguments(args):
     if '--list-models' in args:
-        raise ValueError('此版本本地 CLI 的 --list-models 会访问 Cursor 后端，暂不支持；默认使用 Claude 订阅 Opus。')
+        raise ValueError('此版本本地 CLI 的 --list-models 会访问 Cursor 后端，暂不支持；固定使用 Claude 订阅 Opus 5.5 High。')
     for arg in args:
+        if arg == '--model' or arg.startswith('--model='):
+            raise ValueError('此 CLI 固定使用 Claude 订阅 Opus 5.5 High，不能覆盖模型与推理强度。')
         if arg.split('=', 1)[0] in ['--base-url', '--local-agent-api-key', '--endpoint', '-e',
                                     '--agent-endpoint', '--enable-bedrock', '--enable-local-bedrock']:
             raise ValueError('此入口固定使用本机 Claude 订阅 bridge，不能覆盖推理路由。')
-    model = [] if any(arg == '--model' or arg.startswith('--model=') for arg in args) else ['--model', DEFAULT_MODEL]
-    return ['--authless', *model, *args]
+    return ['--authless', *args]
+
+
+def pinned_config(original):
+    parameters = [{'id': 'reasoning', 'value': 'high'}]
+    return {**original, 'model': {'modelId': DEFAULT_MODEL, 'displayModelId': DEFAULT_MODEL,
+            'displayName': 'Claude Opus 5.5', 'displayNameShort': 'Opus 5.5', 'aliases': []},
+            'selectedModel': {'modelId': DEFAULT_MODEL, 'parameters': parameters},
+            'modelParameters': {**original.get('modelParameters', {}), DEFAULT_MODEL: parameters},
+            'hasChangedDefaultModel': True, 'maxMode': False, 'exploreSubagentModel': 'inherit',
+            'subagentModels': {**original.get('subagentModels', {}), 'explore': 'inherit'}}
+
+
+def prepare_profile(source):
+    config_dir = Path(source.get('CURSOR_CONFIG_DIR') or source.get('CURSOR_DATA_DIR') or Path.home() / '.cursor')
+    original = config_dir / 'cli-config.json'
+    cfg = pinned_config(read(original) if original.exists() else {})
+    profile = STATE / 'cli-opus55-high'
+    profile.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd, temporary = tempfile.mkstemp(dir=profile, prefix='cli-config-')
+    try:
+        with os.fdopen(fd, 'w') as stream:
+            json.dump(cfg, stream)
+        os.replace(temporary, profile / 'cli-config.json')
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+    return profile
 
 
 def cli_environment(cfg, source):
@@ -32,7 +98,7 @@ def cli_environment(cfg, source):
         raise ValueError('Claude bridge 配置无效，需要先运行 ./cursor-link install。')
     env = {k: v for k, v in source.items() if k not in ['ELECTRON_RUN_AS_NODE', 'CURSOR_ENABLE_BEDROCK',
            'CURSOR_ENABLE_LOCAL_BEDROCK', 'CURSOR_LOCAL_AGENT_API_KEY_HELPER']}
-    env.update(CURSOR_LOCAL_AGENT_BASE_URL=f'http://127.0.0.1:{port}/v1', CURSOR_LOCAL_AGENT_API_KEY=cfg['key'])
+    env.update(CURSOR_LOCAL_AGENT_BASE_URL=f'http://127.0.0.1:{port}/cli/v1', CURSOR_LOCAL_AGENT_API_KEY=cfg['key'])
     return env
 
 
@@ -74,7 +140,10 @@ def main():
     cfg = read(STATE / 'config.json')
     env = cli_environment(cfg, os.environ)
     ensure_bridge(cfg)
-    os.execve(cli, [str(cli), *args], env)
+    env['CURSOR_CONFIG_DIR'] = str(prepare_profile(os.environ))
+    env['CURSOR_INVOKED_AS'] = 'cursor-agent-local'
+    script = patched_cli(cli)
+    os.execve(cli.parent / 'node', [str(cli), '--use-system-ca', str(script), *args], env)
 
 
 if __name__ == '__main__':

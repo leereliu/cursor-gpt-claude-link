@@ -2,26 +2,71 @@ import sys
 import io
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import Mock, patch
 import urllib.error
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from agent import cli_arguments, cli_environment, ensure_bridge
+from agent import DEFAULT_MODEL, cli_arguments, cli_environment, ensure_bridge, patch_cli_source, patched_cli, pinned_config
 
 
 class AgentCliTests(unittest.TestCase):
-    def test_defaults_to_subscription_opus_and_preserves_cursor_arguments(self):
+    def test_pins_subscription_opus_55_high_and_preserves_cursor_arguments(self):
         self.assertEqual(cli_arguments(['--print', 'hello']),
-                         ['--authless', '--model', 'claude-subscription/opus', '--print', 'hello'])
-        self.assertEqual(cli_arguments(['--model=claude-subscription/sonnet', 'hello']),
-                         ['--authless', '--model=claude-subscription/sonnet', 'hello'])
+                         ['--authless', '--print', 'hello'])
+        for arg in ['--model', '--model=claude-subscription/sonnet', '--model=claude-subscription/opus[reasoning=low]']:
+            with self.assertRaisesRegex(ValueError, 'Opus 5.5 High'):
+                cli_arguments([arg])
+
+    def test_profile_preserves_permissions_and_pins_model_effort_and_explore_inheritance(self):
+        original = {'approvalMode': 'allowlist', 'permissions': {'deny': ['Shell(rm)']},
+                    'selectedModel': {'modelId': 'old', 'parameters': []},
+                    'modelParameters': {'old': [{'id': 'reasoning', 'value': 'low'}]},
+                    'subagentModels': {'explore': 'old', 'other': 'keep'}, 'exploreSubagentModel': 'default'}
+        cfg = pinned_config(original)
+        self.assertEqual(cfg['approvalMode'], 'allowlist')
+        self.assertEqual(cfg['permissions'], original['permissions'])
+        self.assertEqual(cfg['selectedModel'], {'modelId': DEFAULT_MODEL, 'parameters': [{'id': 'reasoning', 'value': 'high'}]})
+        self.assertEqual(cfg['modelParameters'][DEFAULT_MODEL], cfg['selectedModel']['parameters'])
+        self.assertEqual(cfg['subagentModels'], {'explore': 'inherit', 'other': 'keep'})
+        self.assertEqual(cfg['exploreSubagentModel'], 'inherit')
+        self.assertEqual(original['selectedModel']['modelId'], 'old')
+        self.assertEqual(original['subagentModels']['explore'], 'old')
+
+    def test_native_cli_waits_for_catalog_and_keeps_high_when_restoring_model(self):
+        source = '''class Manager {
+          async awaitCurrentModelWithStartupCache(){return this.currentModel}async awaitCurrentModel(){return this.currentModel}
+          async setModelFromStoredId(e,t){return!!e?.trim()&&(await this.setCurrentModelWithParameters(e.trim(),[],t),!0)}
+          getParametersForModel(){return [{id:'reasoning',value:'high'}]}
+          async setCurrentModelWithParameters(id,parameters){this.selected={id,parameters}}
+        }'''
+        patched = patch_cli_source(source)
+        check = '''
+        const assert=require('node:assert/strict');(async()=>{
+          const manager=new Manager;manager.currentModel='opus';let ready=false;
+          manager.modelFetchPromise=new Promise(resolve=>setTimeout(()=>{ready=true;resolve()},5));
+          assert.equal(await manager.awaitCurrentModelWithStartupCache(),'opus');assert.ok(ready);
+          await manager.setModelFromStoredId('opus',{});
+          assert.deepEqual(manager.selected,{id:'opus',parameters:[{id:'reasoning',value:'high'}]});
+        })().catch(error=>{console.error(error);process.exitCode=1});'''
+        subprocess.run(['node', '-e', patched + check], check=True, capture_output=True)
+        with self.assertRaises(ValueError):
+            patch_cli_source(source + source)
+        with self.assertRaises(ValueError):
+            patch_cli_source('unknown CLI')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'index.js').write_text('unknown CLI')
+            with self.assertRaisesRegex(ValueError, '指纹不匹配'):
+                patched_cli(root / 'cursor-agent-local')
+            self.assertFalse((root / 'index.opus55-high.js').exists())
 
     def test_local_credentials_stay_in_environment_and_provider_fallback_is_removed(self):
         source = {'PATH': 'fixture', 'CURSOR_ENABLE_BEDROCK': '1', 'CURSOR_ENABLE_LOCAL_BEDROCK': '1',
                   'CURSOR_LOCAL_AGENT_API_KEY_HELPER': '/unused', 'ELECTRON_RUN_AS_NODE': '1'}
         env = cli_environment({'claudePort': 43188, 'key': 'fixture-local-secret'}, source)
-        self.assertEqual(env, {'PATH': 'fixture', 'CURSOR_LOCAL_AGENT_BASE_URL': 'http://127.0.0.1:43188/v1',
+        self.assertEqual(env, {'PATH': 'fixture', 'CURSOR_LOCAL_AGENT_BASE_URL': 'http://127.0.0.1:43188/cli/v1',
                               'CURSOR_LOCAL_AGENT_API_KEY': 'fixture-local-secret'})
         self.assertNotIn('fixture-local-secret', ' '.join(cli_arguments([])))
         self.assertEqual(source['CURSOR_ENABLE_BEDROCK'], '1')
